@@ -33,6 +33,9 @@ param appServicePlanSku string = 'B1'
 ])
 param storageSku string = 'Standard_LRS'
 
+@description('The URL of the Git repository for the Web App source code')
+param repoUrl string
+
 // Variables
 var uniqueSuffix = take(uniqueString(resourceGroup().id), 5)
 var storageAccountName = 'st${replace(appName, '-', '')}${environment}${uniqueSuffix}'
@@ -150,8 +153,32 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
           value: '0'
         }
+        {
+          name: 'PROJECT'
+          value: 'src/app'
+        }
       ]
     }
+  }
+}
+
+resource webAppxx 'Microsoft.Web/sites/basicPublishingCredentialsPolicies@2024-11-01' = {
+  name: 'scm'
+  parent: webApp
+  properties: {
+    allow: true
+  }
+}
+
+resource webAppSourceControl 'Microsoft.Web/sites/sourcecontrols@2024-11-01' = {
+  name: 'web'
+  parent: webApp
+  properties: {
+    branch: 'main'
+    repoUrl: repoUrl
+    isGitHubAction: false
+    isManualIntegration: true
+    isMercurial: false
   }
 }
 
