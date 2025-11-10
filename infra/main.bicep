@@ -1,17 +1,11 @@
+extension microsoftGraphV1
+
 @description('The name of the web application')
 @maxLength(14)
 param appName string
 
 @description('The location for all resources')
 param location string = resourceGroup().location
-
-@description('The environment name (dev, test, prod)')
-@allowed([
-  'dev'
-  'tst'
-  'prd'
-])
-param environment string = 'dev'
 
 @description('The SKU for the App Service Plan')
 @allowed([
@@ -27,34 +21,25 @@ param appServicePlanSku string = 'B1'
 @allowed([
   'Standard_LRS'
   'Standard_GRS'
-  'Standard_RAGRS'
   'Standard_ZRS'
-  'Premium_LRS'
 ])
 param storageSku string = 'Standard_LRS'
 
-@description('The URL of the Git repository for the Web App source code')
-param repoUrl string
-
 // Variables
 var uniqueSuffix = take(uniqueString(resourceGroup().id), 5)
-var storageAccountName = 'st${replace(appName, '-', '')}${environment}${uniqueSuffix}'
-var appServicePlanName = 'asp-${appName}-${environment}'
-var webAppName = 'app-${appName}-${environment}-${uniqueSuffix}'
-var storageContainerName = 'uploads'
+var issuer = '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
 
-// Tags
-var commonTags = {
-  Environment: environment
-  Application: appName
-  ManagedBy: 'Bicep'
-}
+// Resource names
+var storageAccountName = 'st${appName}${uniqueSuffix}'
+var appServicePlanName = 'asp-${appName}-${uniqueSuffix}'
+var webAppName = 'app-${appName}-${uniqueSuffix}'
+var uamiName = 'uami-${appName}-${uniqueSuffix}'
+var storageContainerName = 'uploads'
 
 // Storage Account
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: toLower(storageAccountName)
   location: location
-  tags: commonTags
   sku: {
     name: storageSku
   }
@@ -94,11 +79,27 @@ resource uploadContainer 'Microsoft.Storage/storageAccounts/blobServices/contain
   }
 }
 
+// User Assigned Managed Identity for Web App
+resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2025-01-31-preview' = {
+  name: uamiName
+  location: location
+}
+
+module appReg 'modules/appregistration.bicep' = {
+  name: 'reg'
+  params: {
+    clientAppName: webAppName
+    clientAppDisplayName: 'MagicFiles Web App'
+    issuer: issuer
+    webAppEndpoint: 'https://${webApp.properties.defaultHostName}'
+    webAppIdentityId: uami.properties.clientId
+  }
+}
+
 // App Service Plan
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
   location: location
-  tags: commonTags
   sku: {
     name: appServicePlanSku
   }
@@ -112,9 +113,11 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   name: webAppName
   location: location
-  tags: commonTags
   identity: {
-    type: 'SystemAssigned'
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${uami.id}': {}
+    }
   }
   properties: {
     serverFarmId: appServicePlan.id
@@ -134,71 +137,87 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
           value: storageContainerName
         }
         {
-          name: 'NODE_ENV'
-          value: environment
-        }
-        {
-          name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '~20'
-        }
-        {
-          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'true'
-        }
-        {
-          name: 'ENABLE_ORYX_BUILD'
-          value: 'true'
-        }
-        {
-          name: 'WEBSITE_RUN_FROM_PACKAGE'
-          value: '0'
-        }
-        {
-          name: 'PROJECT'
-          value: 'src/app'
+          name: 'OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID'
+          value: uami.properties.clientId
         }
       ]
     }
   }
 }
 
-resource webAppxx 'Microsoft.Web/sites/basicPublishingCredentialsPolicies@2024-11-01' = {
-  name: 'scm'
+resource webAppAuth 'Microsoft.Web/sites/config@2024-11-01' = {
+  name: 'authsettingsV2'
   parent: webApp
   properties: {
-    allow: true
+    platform: {
+      enabled: true
+    }
+    globalValidation: {
+      unauthenticatedClientAction: 'RedirectToLoginPage'
+      redirectToProvider: 'AzureActiveDirectory'
+      requireAuthentication: true
+    }
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+
+        registration: {
+          clientId: appReg.outputs.clientAppId
+          clientSecretSettingName: 'OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID'
+          openIdIssuer: issuer
+        }
+        validation: {
+          defaultAuthorizationPolicy: {
+            allowedApplications: []
+          }
+        }
+      }
+    }
+    login: {
+      tokenStore: {
+        enabled: false
+      }
+    }
   }
 }
 
-resource webAppSourceControl 'Microsoft.Web/sites/sourcecontrols@2024-11-01' = {
-  name: 'web'
-  parent: webApp
-  properties: {
-    branch: 'main'
-    repoUrl: repoUrl
-    isGitHubAction: false
-    isManualIntegration: true
-    isMercurial: false
-  }
-}
+// resource webAppSCM 'Microsoft.Web/sites/basicPublishingCredentialsPolicies@2024-11-01' = {
+//   name: 'scm'
+//   parent: webApp
+//   properties: {
+//     allow: true
+//   }
+// }
+
+// resource webAppSourceControl 'Microsoft.Web/sites/sourcecontrols@2024-11-01' = {
+//   name: 'web'
+//   parent: webApp
+//   properties: {
+//     branch: 'main'
+//     repoUrl: repoUrl
+//     isGitHubAction: false
+//     isManualIntegration: true
+//     isMercurial: false
+//   }
+// }
 
 // Role Assignment: Storage Blob Data Contributor for Web App (Managed Identity)
 resource roleAssignment1 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccount.id, webApp.id)
+  name: guid(storageAccount.id)
   scope: storageAccount
   properties: {
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
     )
-    principalId: webApp.identity.principalId
+    principalId: uami.properties.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
 // Role Assignment: Storage Blob Data Contributor for Use (Deployer)
 resource roleAssignment2 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccount.id, webApp.id, deployer().objectId)
+  name: guid(storageAccount.id, deployer().objectId)
   scope: storageAccount
   properties: {
     roleDefinitionId: subscriptionResourceId(
