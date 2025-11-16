@@ -129,6 +129,10 @@ module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
           name: 'OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID'
           value: uami_AVM.outputs.clientId
         }
+        {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
+          value: 'true'
+        }
       ]
     }
   }
