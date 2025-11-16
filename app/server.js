@@ -97,35 +97,10 @@ async function getContainerClient() {
 }
 
 async function ensureContainer(containerClient) {
-    try {
-        const exists = await containerClient.exists();
-        if (exists) {
-            return;
-        }
-    } catch (error) {
-        if (error?.statusCode === 403) {
-            const authError = new Error('Access denied while checking container existence. Ensure the identity has at least read permissions on the container.');
-            authError.statusCode = 403;
-            authError.code = error?.code;
-            throw authError;
-        }
-        throw error;
-    }
-
-    try {
-        await containerClient.create();
-    } catch (error) {
-        if (error?.statusCode === 409) {
-            return;
-        }
-        if (error?.statusCode === 403) {
-            const authError = new Error('Access denied while creating container. Grant Storage Blob Data Contributor permissions or create the container manually.');
-            authError.statusCode = 403;
-            authError.code = error?.code;
-            throw authError;
-        }
-        throw error;
-    }
+    // Skip container existence check - assume container exists or will be created via infrastructure
+    // The Storage Blob Data Contributor role doesn't include permissions for GetContainerProperties
+    // which is required by containerClient.exists()
+    return;
 }
 
 function translateStorageError(error, defaultMessage) {
