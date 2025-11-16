@@ -474,6 +474,22 @@
             animation: fade-out .2s ease forwards;
         }
 
+        .toast .toast-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-right: 12px;
+        }
+
+        .toast .toast-content strong {
+            font-size: .9rem;
+        }
+
+        .toast .toast-detail {
+            font-size: .78rem;
+            color: var(--subtle-text);
+        }
+
         .toast .toast-close {
             border: none;
             background: transparent;
@@ -726,16 +742,21 @@
             xhr.onload = () => {
                 resetProgress();
                 uploadBtn.textContent = '⬆️ Upload file';
-                uploadBtn.disabled = true;
-                fileInput.value = '';
-                selectedFile.textContent = '';
                 const response = safeJson(xhr.responseText);
                 if (xhr.status >= 200 && xhr.status < 300) {
+                    uploadBtn.disabled = true;
                     state.currentFile = null;
+                    fileInput.value = '';
+                    selectedFile.textContent = '';
                     pushToast(`Uploaded ${response?.fileName || 'file'} successfully`, 'success');
                     loadFiles();
                 } else {
-                    pushToast(response?.error || 'Upload failed', 'error');
+                    uploadBtn.disabled = false;
+                    if (state.currentFile) {
+                        selectedFile.textContent = `Selected: ${state.currentFile.name} (${formatFileSize(state.currentFile.size)})`;
+                    }
+                    const { message, detail } = buildErrorNotice(response, 'Upload failed');
+                    pushToast(message, 'error', detail);
                 }
             };
 
@@ -743,7 +764,10 @@
                 resetProgress();
                 uploadBtn.textContent = '⬆️ Upload file';
                 uploadBtn.disabled = false;
-                pushToast('Network error while uploading', 'error');
+                if (state.currentFile) {
+                    selectedFile.textContent = `Selected: ${state.currentFile.name} (${formatFileSize(state.currentFile.size)})`;
+                }
+                pushToast('Network error while uploading', 'error', 'Check your connection and try again.');
             };
 
             xhr.send(formData);
@@ -763,7 +787,11 @@
             try {
                 const response = await fetch('/files');
                 if (!response.ok) {
-                    throw new Error('Unable to load files');
+                    const payload = await response.json().catch(() => null);
+                    const { message, detail } = buildErrorNotice(payload, 'Failed to load files');
+                    filesBody.innerHTML = '<tr><td colspan="4" class="empty-state">Unable to load files</td></tr>';
+                    pushToast(message, 'error', detail);
+                    return;
                 }
                 const data = await response.json();
                 state.files = data.files || [];
@@ -773,7 +801,7 @@
                 }
             } catch (error) {
                 filesBody.innerHTML = '<tr><td colspan="4" class="empty-state">Error loading files</td></tr>';
-                pushToast(error.message || 'Failed to load files', 'error');
+                pushToast('Failed to load files', 'error', error.message);
             }
         }
 
@@ -849,13 +877,15 @@
                 try {
                     const response = await fetch(`/files/${name}`, { method: 'DELETE' });
                     if (!response.ok) {
-                        const error = await response.json().catch(() => ({ error: 'Delete failed' }));
-                        throw new Error(error.error || 'Delete failed');
+                        const payload = await response.json().catch(() => null);
+                        const { message, detail } = buildErrorNotice(payload, 'Delete failed');
+                        pushToast(message, 'error', detail);
+                        return;
                     }
                     pushToast('File deleted', 'success');
                     loadFiles();
                 } catch (error) {
-                    pushToast(error.message, 'error');
+                    pushToast('Delete failed', 'error', error.message);
                 } finally {
                     button.disabled = false;
                     button.textContent = originalLabel;
@@ -909,19 +939,74 @@
             applyTheme(next);
         });
 
-        function pushToast(message, type = 'info') {
+        function pushToast(message, type = 'info', detail) {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            toast.innerHTML = `<span>${message}</span><button class="toast-close" aria-label="Dismiss">✕</button>`;
+
+            const content = document.createElement('div');
+            content.className = 'toast-content';
+
+            const title = document.createElement('strong');
+            title.textContent = message;
+            content.appendChild(title);
+
+            if (detail) {
+                const detailEl = document.createElement('span');
+                detailEl.className = 'toast-detail';
+                detailEl.textContent = detail;
+                content.appendChild(detailEl);
+            }
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'toast-close';
+            closeBtn.type = 'button';
+            closeBtn.setAttribute('aria-label', 'Dismiss');
+            closeBtn.textContent = '✕';
+
+            toast.append(content, closeBtn);
             toastStack.appendChild(toast);
 
-            const closeBtn = toast.querySelector('.toast-close');
             const removal = () => {
                 toast.classList.add('fade-out');
                 setTimeout(() => toast.remove(), 250);
             };
+
             closeBtn.addEventListener('click', removal);
             setTimeout(removal, type === 'error' ? 6000 : 4000);
+        }
+
+        function buildErrorNotice(payload, fallback) {
+            if (!payload) {
+                return { message: fallback, detail: null };
+            }
+
+            if (typeof payload === 'string') {
+                return { message: payload, detail: null };
+            }
+
+            const primary = payload.error || fallback;
+            const detailParts = [];
+
+            if (payload.details && payload.details !== primary) {
+                detailParts.push(payload.details);
+            }
+
+            if (payload.guidance) {
+                detailParts.push(payload.guidance);
+            }
+
+            if (payload.code) {
+                detailParts.push(`Code: ${payload.code}`);
+            }
+
+            if (payload.statusCode && payload.statusCode !== payload.code) {
+                detailParts.push(`Status: ${payload.statusCode}`);
+            }
+
+            return {
+                message: primary,
+                detail: detailParts.length > 0 ? detailParts.join(' ') : null
+            };
         }
 
         function getOriginalName(name) {

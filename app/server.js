@@ -51,25 +51,27 @@ const upload = multer({
 
 // Azure Storage configuration
 const STORAGE_ACCOUNT_NAME = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+const STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
 const CONTAINER_NAME = process.env.AZURE_STORAGE_CONTAINER_NAME || 'uploads';
 
-if (!process.env.AZURE_STORAGE_ACCOUNT_NAME) {
-    logger.warn('AZURE_STORAGE_ACCOUNT_NAME is not defined; blob operations will fail until configured.');
+if (!STORAGE_ACCOUNT_NAME && !STORAGE_CONNECTION_STRING) {
+    logger.warn('Neither AZURE_STORAGE_ACCOUNT_NAME nor AZURE_STORAGE_CONNECTION_STRING is defined; blob operations will fail until configured.');
 }
 
 // Initialize Blob Service Client with Managed Identity
 let blobServiceClient;
 try {
-    if (!STORAGE_ACCOUNT_NAME) {
-        throw new Error('AZURE_STORAGE_ACCOUNT_NAME is not defined');
+    if (STORAGE_CONNECTION_STRING) {
+        blobServiceClient = BlobServiceClient.fromConnectionString(STORAGE_CONNECTION_STRING);
+        logger.info('Initialized Azure Storage client using connection string');
+    } else if (STORAGE_ACCOUNT_NAME) {
+        const credential = new DefaultAzureCredential();
+        const accountUrl = `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net`;
+        blobServiceClient = new BlobServiceClient(accountUrl, credential);
+        logger.info({ account: STORAGE_ACCOUNT_NAME }, 'Initialized Azure Storage client using managed identity');
+    } else {
+        throw new Error('Storage configuration missing. Provide AZURE_STORAGE_CONNECTION_STRING or AZURE_STORAGE_ACCOUNT_NAME.');
     }
-
-    // Use DefaultAzureCredential for Managed Identity authentication
-    const credential = new DefaultAzureCredential();
-    const accountUrl = `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net`;
-    blobServiceClient = new BlobServiceClient(accountUrl, credential);
-
-    logger.info({ account: STORAGE_ACCOUNT_NAME }, 'Initialized Azure Storage client');
 } catch (error) {
     logger.error({ err: error }, 'Error initializing Azure Storage');
 }
@@ -78,7 +80,7 @@ let containerClientPromise;
 
 async function getContainerClient() {
     if (!blobServiceClient) {
-        throw new Error('Azure Storage is not configured');
+        throw new Error('Azure Storage is not configured. Provide AZURE_STORAGE_CONNECTION_STRING or configure managed identity with AZURE_STORAGE_ACCOUNT_NAME.');
     }
 
     if (!containerClientPromise) {
@@ -92,6 +94,48 @@ async function getContainerClient() {
     }
 
     return containerClientPromise;
+}
+
+function translateStorageError(error, defaultMessage) {
+    const message = error?.message || defaultMessage;
+    if (message.includes('not configured')) {
+        return {
+            status: 503,
+            body: {
+                error: 'Storage service unavailable',
+                details: message,
+                guidance: 'Set AZURE_STORAGE_CONNECTION_STRING or configure AZURE_STORAGE_ACCOUNT_NAME with a managed identity.'
+            }
+        };
+    }
+
+    if (error?.statusCode === 404) {
+        return {
+            status: 404,
+            body: {
+                error: 'Storage resource not found',
+                details: 'The requested blob or container could not be located.'
+            }
+        };
+    }
+
+    const responseBody = {
+        status: 500,
+        body: {
+            error: defaultMessage,
+            details: message
+        }
+    };
+
+    if (error?.code) {
+        responseBody.body.code = error.code;
+    }
+
+    if (typeof error?.statusCode === 'number') {
+        responseBody.body.statusCode = error.statusCode;
+    }
+
+    return responseBody;
 }
 
 // Middleware
@@ -170,10 +214,8 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         });
     } catch (error) {
         req.log.error({ err: error }, 'Error uploading file');
-        res.status(500).json({
-            error: 'Failed to upload file',
-            details: error.message
-        });
+        const translated = translateStorageError(error, 'Failed to upload file');
+        res.status(translated.status).json(translated.body);
     }
 });
 
@@ -203,10 +245,8 @@ app.get('/files', async (req, res) => {
         res.json({ files });
     } catch (error) {
         req.log.error({ err: error }, 'Error listing files');
-        res.status(500).json({
-            error: 'Failed to list files',
-            details: error.message
-        });
+        const translated = translateStorageError(error, 'Failed to list files');
+        res.status(translated.status).json(translated.body);
     }
 });
 
@@ -227,7 +267,8 @@ app.get('/files/:name/download', async (req, res) => {
         downloadResponse.readableStreamBody.pipe(res);
     } catch (error) {
         req.log.error({ err: error }, 'Error downloading file');
-        res.status(500).json({ error: 'Failed to download file', details: error.message });
+        const translated = translateStorageError(error, 'Failed to download file');
+        res.status(translated.status).json(translated.body);
     }
 });
 
@@ -245,7 +286,8 @@ app.delete('/files/:name', async (req, res) => {
         res.json({ success: true, message: 'File deleted', name: blobName });
     } catch (error) {
         req.log.error({ err: error }, 'Error deleting file');
-        res.status(500).json({ error: 'Failed to delete file', details: error.message });
+        const translated = translateStorageError(error, 'Failed to delete file');
+        res.status(translated.status).json(translated.body);
     }
 });
 
