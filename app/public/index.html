@@ -12,168 +12,150 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --panel-bg: #ffffff;
+            --panel-alt-bg: #f8f9fa;
+            --panel-border: #cbd5e0;
+            --text-color: #222;
+            --subtle-text: #666;
+            --accent: #667eea;
+            --accent-hover: #5568d3;
+            --success: #48bb78;
+            --success-hover: #38a169;
+            --danger: #e53e3e;
+            --danger-hover: #c53030;
+            --scrollbar: #a0aec0;
+        }
+
+        body.dark {
+            --bg: linear-gradient(135deg, #1f2937 0%, #2d3748 100%);
+            --panel-bg: #2d3748;
+            --panel-alt-bg: #374151;
+            --panel-border: #4a5568;
+            --text-color: #f7fafc;
+            --subtle-text: #cbd5e0;
+            --accent: #805ad5;
+            --accent-hover: #6b46c1;
+            --success: #2f855a;
+            --success-hover: #276749;
+            --danger: #c53030;
+            --danger-hover: #9b2c2c;
+            --scrollbar: #718096;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg);
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 24px 28px 60px;
+            color: var(--text-color);
+            transition: background .4s ease;
         }
 
-        body {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
+        .site-header {
             width: 100%;
-            padding: 40px;
+            max-width: 1200px;
+            background: var(--panel-bg);
+            box-shadow: 0 6px 22px rgba(0, 0, 0, .25);
+            border-radius: 14px;
+            padding: 22px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 26px;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2em;
+        .site-header h1 {
+            font-size: 1.9em;
+            font-weight: 700;
+            margin: 0;
         }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 0.95em;
+        .site-header .tagline {
+            font-size: .85em;
+            color: var(--subtle-text);
+            margin-top: 4px;
+        }
 
-            :root {
-                --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                --panel-bg: #ffffff;
-                --panel-alt-bg: #f8f9fa;
-                --panel-border: #cbd5e0;
-                --text-color: #222;
-                --subtle-text: #666;
-                --accent: #667eea;
-                --accent-hover: #5568d3;
-                --success: #48bb78;
-                --success-hover: #38a169;
-                --danger: #e53e3e;
-                --danger-hover: #c53030;
-                --scrollbar: #a0aec0;
-            }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+        }
 
-            body.dark {
-                --bg: linear-gradient(135deg, #1f2937 0%, #2d3748 100%);
-                --panel-bg: #2d3748;
-                --panel-alt-bg: #374151;
-                --panel-border: #4a5568;
-                --text-color: #f7fafc;
-                --subtle-text: #cbd5e0;
-                --accent: #805ad5;
-                --accent-hover: #6b46c1;
-                --success: #2f855a;
-                --success-hover: #276749;
-                --danger: #c53030;
-                --danger-hover: #9b2c2c;
-                --scrollbar: #718096;
-            }
+        .theme-toggle {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background .25s ease;
+            white-space: nowrap;
+        }
 
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: var(--bg);
-                min-height: 100vh;
-                display: flex;
-                justify-content: center;
-                align-items: flex-start;
-                padding: 30px 30px 60px;
-                color: var(--text-color);
-                transition: background .4s ease;
-            }
+        .theme-toggle:hover {
+            background: var(--accent-hover);
+        }
 
-            .app-wrapper {
-                background: var(--panel-bg);
-                border-radius: 16px;
-                box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
-                width: 100%;
-                max-width: 1200px;
-                padding: 32px 36px 42px;
-                display: flex;
-                flex-direction: column;
-                gap: 28px;
-            }
+        .app-wrapper {
+            background: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
+            width: 100%;
+            max-width: 1200px;
+            padding: 30px 34px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 26px;
+        }
 
-            .header-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 20px;
-                flex-wrap: wrap;
-            }
+        .layout {
+            display: flex;
+            gap: 32px;
+            align-items: stretch;
+        }
 
-            h1 {
-                font-size: 2.1em;
-                font-weight: 700;
-            }
+        .left-pane,
+        .right-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
 
-            .subtitle {
-                font-size: .95em;
-                color: var(--subtle-text);
-            }
-
-            .layout {
-                display: flex;
-                gap: 32px;
-                align-items: stretch;
-            }
-
-            .left-pane,
-            .right-pane {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-            }
-
-            .pane-title {
-                font-size: 1.35em;
-                font-weight: 600;
-                margin-bottom: 16px;
-            }
-
-            .upload-section {
-                background: var(--panel-alt-bg);
-                border: 2px dashed var(--panel-border);
-                border-radius: 10px;
-                padding: 36px 30px;
-                text-align: center;
-                margin-bottom: 20px;
-                transition: all 0.3s ease;
-            }
-
-            .upload-section:hover {
-                border-color: var(--accent);
-                background: rgba(102, 126, 234, .12);
-            }
+        .pane-title {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-bottom: 14px;
         }
 
         .upload-section {
-            background: #f8f9fa;
-            border: 2px dashed #cbd5e0;
-            border-radius: 8px;
-            padding: 40px;
+            background: var(--panel-alt-bg);
+            border: 2px dashed var(--panel-border);
+            border-radius: 10px;
+            padding: 34px 28px;
             text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s ease;
+            margin-bottom: 18px;
+            transition: all .3s ease;
         }
 
         .upload-section:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
+            border-color: var(--accent);
+            background: rgba(102, 126, 234, .12);
         }
 
         .upload-section.drag-over {
-            border-color: #667eea;
-            background: #e6f2ff;
+            border-color: var(--accent);
+            background: rgba(102, 126, 234, .20);
         }
 
         .upload-icon {
             font-size: 48px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         input[type="file"] {
@@ -183,25 +165,27 @@
         .file-label {
             display: inline-block;
             padding: 12px 30px;
-            background: #667eea;
-            color: white;
+            background: var(--accent);
+            color: #fff;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            transition: background 0.3s ease;
+            transition: background .25s ease;
         }
 
         .file-label:hover {
-            background: #5568d3;
+            background: var(--accent-hover);
         }
 
         .selected-file {
-            margin-top: 15px;
-            color: #555;
+            margin-top: 14px;
+            color: var(--subtle-text);
             font-style: italic;
+            min-height: 20px;
         }
 
         .upload-btn {
+            display: block;
             width: 100%;
             padding: 15px;
             background: var(--success);
@@ -211,7 +195,7 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 10px;
             transition: background .25s ease;
         }
 
@@ -222,21 +206,6 @@
         .upload-btn:disabled {
             background: #cbd5e0;
             cursor: not-allowed;
-        }
-
-        .theme-toggle {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 10px 18px;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background .25s ease;
-        }
-
-        .theme-toggle:hover {
-            background: var(--accent-hover);
         }
 
         .files-table-wrapper {
@@ -305,31 +274,14 @@
 
         .empty-state {
             text-align: center;
-            padding: 30px;
+            padding: 26px;
             color: var(--subtle-text);
         }
 
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--scrollbar);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
-        }
-
         .message {
-            padding: 15px;
+            padding: 14px;
             border-radius: 6px;
-            margin-top: 20px;
+            margin-top: 18px;
             display: none;
         }
 
@@ -345,89 +297,297 @@
             border: 1px solid #fc8181;
         }
 
-        .files-section {
-            margin-top: 40px;
+        ::-webkit-scrollbar {
+            width: 10px;
         }
 
-        .files-section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.5em;
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar);
+            border-radius: 5px;
         }
 
-        .files-list {
-            max-height: 300px;
-            overflow-y: auto;
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
         }
+    </style>
 
-        .file-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .upload-section {
+    background: #f8f9fa;
+    border: 2px dashed #cbd5e0;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    margin-bottom: 30px;
+    transition: all 0.3s ease;
+    }
 
-        .file-info {
-            flex: 1;
-        }
+    .upload-section:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+    }
 
-        .file-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
+    .upload-section.drag-over {
+    border-color: #667eea;
+    background: #e6f2ff;
+    }
 
-        .file-meta {
-            font-size: 0.85em;
-            color: #666;
-        }
+    .upload-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+    }
 
-        .loading {
-            text-align: center;
-            color: #667eea;
-            padding: 20px;
-        }
+    input[type="file"] {
+    display: none;
+    }
 
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
+    .file-label {
+    display: inline-block;
+    padding: 12px 30px;
+    background: #667eea;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease;
+    }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
+    .file-label:hover {
+    background: #5568d3;
+    }
 
-            100% {
-                transform: rotate(360deg);
-            }
-        }
+    .selected-file {
+    margin-top: 15px;
+    color: #555;
+    font-style: italic;
+    }
 
-        .empty-state {
-            text-align: center;
-            color: #999;
-            padding: 40px;
-        }
+    .upload-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--success);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background .25s ease;
+    }
+
+    .upload-btn:hover:not(:disabled) {
+    background: var(--success-hover);
+    }
+
+    .upload-btn:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    }
+
+    .theme-toggle {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .25s ease;
+    }
+
+    .theme-toggle:hover {
+    background: var(--accent-hover);
+    }
+
+    .files-table-wrapper {
+    flex: 1;
+    background: var(--panel-alt-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow: auto;
+    }
+
+    .files-table {
+    width: 100%;
+    border-collapse: collapse;
+    }
+
+    .files-table th,
+    .files-table td {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: .9em;
+    }
+
+    .files-table th {
+    background: var(--accent);
+    color: #fff;
+    position: sticky;
+    top: 0;
+    }
+
+    .files-table tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, .04);
+    }
+
+    body.dark .files-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, .06);
+    }
+
+    .action-btn {
+    padding: 6px 12px;
+    font-size: .75rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 8px;
+    }
+
+    .download-btn {
+    background: var(--accent);
+    color: #fff;
+    }
+
+    .download-btn:hover {
+    background: var(--accent-hover);
+    }
+
+    .delete-btn {
+    background: var(--danger);
+    color: #fff;
+    }
+
+    .delete-btn:hover {
+    background: var(--danger-hover);
+    }
+
+    .empty-state {
+    text-align: center;
+    padding: 30px;
+    color: var(--subtle-text);
+    }
+
+    ::-webkit-scrollbar {
+    width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+    background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar);
+    border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+    }
+
+    .message {
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 20px;
+    display: none;
+    }
+
+    .message.success {
+    background: #c6f6d5;
+    color: #22543d;
+    border: 1px solid #9ae6b4;
+    }
+
+    .message.error {
+    background: #fed7d7;
+    color: #742a2a;
+    border: 1px solid #fc8181;
+    }
+
+    .files-section {
+    margin-top: 40px;
+    }
+
+    .files-section h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    }
+
+    .files-list {
+    max-height: 300px;
+    overflow-y: auto;
+    }
+
+    .file-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    }
+
+    .file-info {
+    flex: 1;
+    }
+
+    .file-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    }
+
+    .file-meta {
+    font-size: 0.85em;
+    color: #666;
+    }
+
+    .loading {
+    text-align: center;
+    color: #667eea;
+    padding: 20px;
+    }
+
+    .spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+    0% {
+    transform: rotate(0deg);
+    }
+
+    100% {
+    transform: rotate(360deg);
+    }
+    }
+
+    .empty-state {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+    }
     </style>
 </head>
 
 <body>
-    <div class="app-wrapper">
-        <div class="header-row">
-            <div>
-                <h1>📁 File Upload Application</h1>
-                <p class="subtitle">Upload your files securely to Azure Storage</p>
-            </div>
-            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌗 Toggle Theme</button>
+    <header class="site-header">
+        <div class="header-left">
+            <h1>📁 File Upload Application</h1>
+            <div class="tagline">Upload your files securely to Azure Storage</div>
         </div>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">🌗 Dark Mode</button>
+    </header>
+    <div class="app-wrapper">
         <div class="layout">
             <div class="left-pane">
                 <div class="pane-title">Upload</div>
@@ -608,7 +768,7 @@
         });
 
         function applyTheme(pref) {
-            if (pref === 'dark') document.body.classList.add('dark'); else document.body.classList.remove('dark');
+            document.body.classList.toggle('dark', pref === 'dark');
             themeToggle.textContent = pref === 'dark' ? '🌞 Light Mode' : '🌗 Dark Mode';
         }
         function initTheme() {
@@ -616,10 +776,9 @@
             applyTheme(saved);
         }
         themeToggle.addEventListener('click', () => {
-            const isDark = document.body.classList.toggle('dark');
-            const pref = isDark ? 'dark' : 'light';
-            localStorage.setItem('themePref', pref);
-            applyTheme(pref);
+            const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+            localStorage.setItem('themePref', next);
+            applyTheme(next);
         });
 
         // Format file size
