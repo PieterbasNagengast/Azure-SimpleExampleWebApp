@@ -85,7 +85,7 @@ async function getContainerClient() {
 
     if (!containerClientPromise) {
         const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
-        containerClientPromise = containerClient.createIfNotExists()
+        containerClientPromise = ensureContainer(containerClient)
             .then(() => containerClient)
             .catch((error) => {
                 containerClientPromise = undefined;
@@ -94,6 +94,38 @@ async function getContainerClient() {
     }
 
     return containerClientPromise;
+}
+
+async function ensureContainer(containerClient) {
+    try {
+        const exists = await containerClient.exists();
+        if (exists) {
+            return;
+        }
+    } catch (error) {
+        if (error?.statusCode === 403) {
+            const authError = new Error('Access denied while checking container existence. Ensure the identity has at least read permissions on the container.');
+            authError.statusCode = 403;
+            authError.code = error?.code;
+            throw authError;
+        }
+        throw error;
+    }
+
+    try {
+        await containerClient.create();
+    } catch (error) {
+        if (error?.statusCode === 409) {
+            return;
+        }
+        if (error?.statusCode === 403) {
+            const authError = new Error('Access denied while creating container. Grant Storage Blob Data Contributor permissions or create the container manually.');
+            authError.statusCode = 403;
+            authError.code = error?.code;
+            throw authError;
+        }
+        throw error;
+    }
 }
 
 function translateStorageError(error, defaultMessage) {
