@@ -98,6 +98,10 @@ async function getContainerClient() {
 
 function translateStorageError(error, defaultMessage) {
     const message = error?.message || defaultMessage;
+    const errorCode = error?.details?.errorCode || error?.code;
+    const requestId = error?.details?.requestId || error?.response?.headers?.get?.('x-ms-request-id');
+    const statusCode = typeof error?.statusCode === 'number' ? error.statusCode : undefined;
+
     if (message.includes('not configured')) {
         return {
             status: 503,
@@ -105,6 +109,19 @@ function translateStorageError(error, defaultMessage) {
                 error: 'Storage service unavailable',
                 details: message,
                 guidance: 'Set AZURE_STORAGE_CONNECTION_STRING or configure AZURE_STORAGE_ACCOUNT_NAME with a managed identity.'
+            }
+        };
+    }
+
+    if (statusCode === 403) {
+        return {
+            status: 403,
+            body: {
+                error: 'Storage access denied',
+                details: message,
+                guidance: 'Confirm the identity used by the app has Storage Blob Data Contributor (or equivalent) permissions, or that the SAS token/connection string is valid.',
+                code: errorCode,
+                requestId
             }
         };
     }
@@ -120,20 +137,15 @@ function translateStorageError(error, defaultMessage) {
     }
 
     const responseBody = {
-        status: 500,
+        status: statusCode || 500,
         body: {
             error: defaultMessage,
-            details: message
+            details: message,
+            code: errorCode,
+            requestId,
+            statusCode
         }
     };
-
-    if (error?.code) {
-        responseBody.body.code = error.code;
-    }
-
-    if (typeof error?.statusCode === 'number') {
-        responseBody.body.statusCode = error.statusCode;
-    }
 
     return responseBody;
 }
