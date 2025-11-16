@@ -88,6 +88,7 @@ module appReg 'modules/appregistration.bicep' = {
   }
 }
 
+// App Service Plan
 module webServerFarm_AVM 'br/public:avm/res/web/serverfarm:0.5.0' = {
   params: {
     name: appServicePlanName
@@ -97,6 +98,7 @@ module webServerFarm_AVM 'br/public:avm/res/web/serverfarm:0.5.0' = {
   }
 }
 
+// Web App
 module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
   params: {
     name: webAppName
@@ -131,6 +133,7 @@ module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
   }
 }
 
+// Web App Authentication Settings
 module webauth 'br/public:avm/res/web/site/config:0.1.1' = {
   params: {
     name: 'authsettingsV2'
@@ -178,8 +181,7 @@ module webauth 'br/public:avm/res/web/site/config:0.1.1' = {
 // }
 
 // resource webAppSourceControl 'Microsoft.Web/sites/sourcecontrols@2024-11-01' = {
-//   name: 'web'
-//   parent: webApp
+//   name: '${webSsite_AVM.outputs.name}/web'
 //   properties: {
 //     branch: 'main'
 //     repoUrl: repoUrl
