@@ -151,6 +151,51 @@ app.get('/files', async (req, res) => {
     }
 });
 
+// Download file endpoint
+app.get('/files/:name/download', async (req, res) => {
+    try {
+        if (!blobServiceClient) {
+            return res.status(500).json({ error: 'Azure Storage is not configured' });
+        }
+        const blobName = decodeURIComponent(req.params.name);
+        const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+        const blobClient = containerClient.getBlobClient(blobName);
+        const exists = await blobClient.exists();
+        if (!exists) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+        const downloadResponse = await blobClient.download();
+        const originalName = blobName.replace(/^\d+-/, '');
+        res.setHeader('Content-Type', downloadResponse.contentType || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+        downloadResponse.readableStreamBody.pipe(res);
+    } catch (error) {
+        console.error('Error downloading file:', error);
+        res.status(500).json({ error: 'Failed to download file', details: error.message });
+    }
+});
+
+// Delete file endpoint
+app.delete('/files/:name', async (req, res) => {
+    try {
+        if (!blobServiceClient) {
+            return res.status(500).json({ error: 'Azure Storage is not configured' });
+        }
+        const blobName = decodeURIComponent(req.params.name);
+        const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+        const blobClient = containerClient.getBlobClient(blobName);
+        const exists = await blobClient.exists();
+        if (!exists) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+        await blobClient.delete();
+        res.json({ success: true, message: 'File deleted', name: blobName });
+    } catch (error) {
+        console.error('Error deleting file:', error);
+        res.status(500).json({ error: 'Failed to delete file', details: error.message });
+    }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
