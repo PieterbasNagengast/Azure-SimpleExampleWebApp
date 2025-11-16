@@ -59,7 +59,7 @@ module storageAccount_AVM 'br/public:avm/res/storage/storage-account:0.29.0' = {
     }
     roleAssignments: [
       {
-        principalId: uami_AVM.outputs.principalId
+        principalId: webSsite_AVM.outputs.?systemAssignedMIPrincipalId ?? ''
         roleDefinitionIdOrName: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
       }
       {
@@ -108,6 +108,7 @@ module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
       userAssignedResourceIds: [
         uami_AVM.outputs.resourceId
       ]
+      systemAssigned: true
     }
     httpsOnly: true
     siteConfig: {
@@ -118,7 +119,7 @@ module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
       appSettings: [
         {
           name: 'AZURE_STORAGE_ACCOUNT_NAME'
-          value: storageAccount_AVM.outputs.name
+          value: storageAccountName
         }
         {
           name: 'AZURE_STORAGE_CONTAINER_NAME'
