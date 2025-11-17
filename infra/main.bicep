@@ -25,6 +25,12 @@ param storageSku string = 'Standard_LRS'
 @maxValue(500)
 param maxFileSizeMB int = 100
 
+@description('The address prefix for the Virtual Network')
+param vnetAddressPrefix string = '192.168.0.0/25'
+
+@description('Enable AVM telemetry for the Virtual Network')
+param avmTelemetry bool = false
+
 // Variables
 var uniqueSuffix = take(uniqueString(resourceGroup().id), 5)
 var issuer = '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
@@ -34,6 +40,9 @@ var storageAccountName = 'st${appName}${uniqueSuffix}'
 var appServicePlanName = 'asp-${appName}-${uniqueSuffix}'
 var webAppName = 'app-${appName}-${uniqueSuffix}'
 var uamiName = 'uami-${appName}-${uniqueSuffix}'
+var vnetName = 'vnet-${appName}-${uniqueSuffix}'
+var nsgWebAppName = 'nsg-webapp-subnet-${appName}-${uniqueSuffix}'
+var nsgPrivateEndpointName = 'nsg-pe-subnet-${appName}-${uniqueSuffix}'
 var storageContainerName = 'uploads'
 
 // Storage Account with Blob Container
@@ -47,10 +56,23 @@ module storageAccount_AVM 'br/public:avm/res/storage/storage-account:0.29.0' = {
     allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'
+    privateEndpoints: [
+      {
+        service: 'blob'
+        subnetResourceId: networking.outputs.subnetPrivateEndpointId
+        privateDnsZoneGroup: {
+          privateDnsZoneGroupConfigs: [
+            {
+              privateDnsZoneResourceId: networking.outputs.privDNSzoneId
+            }
+          ]
+        }
+      }
+    ]
     networkAcls: {
       bypass: 'AzureServices'
-      defaultAction: 'Allow'
+      defaultAction: 'Deny'
     }
     blobServices: {
       deleteRetentionPolicyEnabled: true
@@ -64,7 +86,7 @@ module storageAccount_AVM 'br/public:avm/res/storage/storage-account:0.29.0' = {
     }
     roleAssignments: [
       {
-        principalId: webSsite_AVM.outputs.?systemAssignedMIPrincipalId ?? ''
+        principalId: webSsite_AVM.?outputs.?systemAssignedMIPrincipalId ?? ''
         roleDefinitionIdOrName: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
       }
       {
@@ -72,18 +94,21 @@ module storageAccount_AVM 'br/public:avm/res/storage/storage-account:0.29.0' = {
         roleDefinitionIdOrName: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
       }
     ]
+    enableTelemetry: avmTelemetry
   }
 }
 
-// User Assigned Managed Identity for Web App
+// User Assigned Managed Identity for Web App Entra ID authentication
 module uami_AVM 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.2' = {
   params: {
     name: uamiName
+    enableTelemetry: avmTelemetry
   }
 }
 
+// App Registration for Web App Entra ID authentication
 module appReg 'modules/appregistration.bicep' = {
-  name: 'reg'
+  name: 'AppRegistration'
   params: {
     clientAppName: webAppName
     clientAppDisplayName: 'MagicFiles Web App'
@@ -100,6 +125,7 @@ module webServerFarm_AVM 'br/public:avm/res/web/serverfarm:0.5.0' = {
     skuName: appServicePlanSku
     kind: 'linux'
     reserved: true
+    enableTelemetry: avmTelemetry
   }
 }
 
@@ -140,6 +166,9 @@ module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
         }
       ]
     }
+    publicNetworkAccess: 'Enabled'
+    virtualNetworkSubnetResourceId: networking.outputs.subnetWebAppId
+    enableTelemetry: avmTelemetry
   }
 }
 
@@ -179,6 +208,18 @@ module webauth 'br/public:avm/res/web/site/config:0.1.1' = {
         }
       }
     }
+    enableTelemetry: avmTelemetry
+  }
+}
+
+module networking 'modules/network.bicep' = {
+  name: 'networking'
+  params: {
+    vnetName: vnetName
+    vnetAddressPrefix: vnetAddressPrefix
+    nsgWebAppName: nsgWebAppName
+    nsgPrivateEndpointName: nsgPrivateEndpointName
+    avmTelemetry: avmTelemetry
   }
 }
 
