@@ -7,10 +7,14 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 8080;
 
+// Max file size configuration (in MB, default 100MB)
+const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB) || 100;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 // Configure multer for memory storage
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+    limits: { fileSize: MAX_FILE_SIZE_BYTES }
 });
 
 // Azure Storage configuration
@@ -37,6 +41,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Get configuration endpoint
+app.get('/api/config', (req, res) => {
+    res.json({
+        maxFileSizeMB: MAX_FILE_SIZE_MB,
+        maxFileSizeBytes: MAX_FILE_SIZE_BYTES
+    });
 });
 
 // List all files in the container
@@ -68,34 +80,55 @@ app.get('/api/files', async (req, res) => {
 });
 
 // Upload a file
-app.post('/api/upload', upload.single('file'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file provided' });
+app.post('/api/upload', (req, res) => {
+    upload.single('file')(req, res, async (err) => {
+        // Handle multer errors (including file size limit)
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({
+                    error: 'File too large',
+                    message: `File size exceeds ${MAX_FILE_SIZE_MB}MB limit`
+                });
+            }
+            return res.status(400).json({
+                error: 'Upload error',
+                message: err.message
+            });
+        } else if (err) {
+            return res.status(500).json({
+                error: 'Upload failed',
+                message: err.message
+            });
         }
 
-        const blobName = `${Date.now()}-${req.file.originalname}`;
-        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-        await blockBlobClient.uploadData(req.file.buffer, {
-            blobHTTPHeaders: {
-                blobContentType: req.file.mimetype
+        try {
+            if (!req.file) {
+                return res.status(400).json({ error: 'No file provided' });
             }
-        });
 
-        res.json({
-            message: 'File uploaded successfully',
-            fileName: blobName,
-            originalName: req.file.originalname,
-            size: req.file.size
-        });
-    } catch (error) {
-        console.error('Error uploading file:', error);
-        res.status(500).json({
-            error: 'Failed to upload file',
-            message: error.message
-        });
-    }
+            const blobName = `${Date.now()}-${req.file.originalname}`;
+            const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+            await blockBlobClient.uploadData(req.file.buffer, {
+                blobHTTPHeaders: {
+                    blobContentType: req.file.mimetype
+                }
+            });
+
+            res.json({
+                message: 'File uploaded successfully',
+                fileName: blobName,
+                originalName: req.file.originalname,
+                size: req.file.size
+            });
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            res.status(500).json({
+                error: 'Failed to upload file',
+                message: error.message
+            });
+        }
+    });
 });
 
 // Download a file

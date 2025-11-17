@@ -20,6 +20,11 @@ param appServicePlanSku string = 'B1'
 ])
 param storageSku string = 'Standard_LRS'
 
+@description('Maximum file size in MB for uploads')
+@minValue(1)
+@maxValue(500)
+param maxFileSizeMB int = 100
+
 // Variables
 var uniqueSuffix = take(uniqueString(resourceGroup().id), 5)
 var issuer = '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
@@ -124,6 +129,10 @@ module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
         {
           name: 'AZURE_STORAGE_CONTAINER_NAME'
           value: storageContainerName
+        }
+        {
+          name: 'MAX_FILE_SIZE_MB'
+          value: string(maxFileSizeMB)
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'

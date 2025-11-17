@@ -67,11 +67,12 @@ Names are suffixed with a 5-char hash for uniqueness:
 `st{appName}{suffix}`, `asp-{appName}-{suffix}`, `app-{appName}-{suffix}`, `uami-{appName}-{suffix}`.
 
 ### Bicep Parameters
-| Name                | Description                          | Default        |
-| ------------------- | ------------------------------------ | -------------- |
-| `appName`           | Base name for resources (<=14 chars) | (required)     |
-| `appServicePlanSku` | App Service Plan SKU                 | `B1`           |
-| `storageSku`        | Storage SKU                          | `Standard_LRS` |
+| Name                | Description                          | Default        | Range |
+| ------------------- | ------------------------------------ | -------------- | ----- |
+| `appName`           | Base name for resources (<=14 chars) | (required)     | -     |
+| `appServicePlanSku` | App Service Plan SKU                 | `B1`           | -     |
+| `storageSku`        | Storage SKU                          | `Standard_LRS` | -     |
+| `maxFileSizeMB`     | Maximum file size for uploads (MB)   | `100`          | 1-500 |
 
 ### Outputs
 - `webAppUrl`: Public HTTPS endpoint of the deployed Web App.
@@ -94,6 +95,9 @@ az group create -n $RG -l $LOCATION
 # Deploy Bicep (using local parameters file if desired)
 az deployment group create \n  -g $RG \n  -f infra/main.bicep \n  -p appName=$APPNAME
 
+# Optional: Deploy with custom max file size (e.g., 200MB)
+az deployment group create \n  -g $RG \n  -f infra/main.bicep \n  -p appName=$APPNAME maxFileSizeMB=200
+
 # Retrieve Web App URL
 az deployment group show -g $RG -n main --query properties.outputs.webAppUrl.value -o tsv
 ```
@@ -110,6 +114,7 @@ Set environment variables for local testing (optional) in a `.env` file:
 ```
 AZURE_STORAGE_ACCOUNT_NAME=yourdevstorage
 AZURE_STORAGE_CONTAINER_NAME=uploads
+MAX_FILE_SIZE_MB=100
 PORT=8080
 ```
 For local runs with Managed Identity you typically test inside the Azure environment; locally you may use a Service Principal or `az login` + `DefaultAzureCredential` which will automatically detect your Azure CLI credentials.
