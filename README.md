@@ -18,9 +18,22 @@ This project deploys a simple Node.js (Express) file upload web application to A
 - App Service Auth Settings (authsettingsV2) enforcing Azure AD login
 
 ### Application Components (`app/`)
-- `server.js`: Express server exposing routes: `/` (static), `/upload`, `/files`, `/health`
+- `server.js`: Express server with REST API endpoints:
+  - `GET /` - Serves the main web interface
+  - `POST /api/upload` - Upload files to blob storage
+  - `GET /api/files` - List all files in the container
+  - `GET /api/download/:filename` - Download a specific file
+  - `DELETE /api/files/:filename` - Delete a file
+  - `GET /api/health` - Health check endpoint
+- `public/index.html`: Modern, responsive UI with:
+  - Drag-and-drop file upload
+  - File listing with icons and metadata
+  - Download and delete functionality
+  - Real-time status messages
+  - Mobile-responsive design
 - Uses `@azure/storage-blob` and `@azure/identity` for MI-based blob operations
-- File validation & size limits (10MB) via `multer`
+- File validation & size limits (100MB) via `multer`
+- System-assigned managed identity authenticated via `DefaultAzureCredential`
 
 ### Architecture Diagram
 ```mermaid
@@ -89,14 +102,17 @@ az deployment group show -g $RG -n main --query properties.outputs.webAppUrl.val
 ```pwsh
 cd app
 npm install
-npm run start  # or npm run dev
+npm start
 ```
+The server will start on port 8080 by default.
+
 Set environment variables for local testing (optional) in a `.env` file:
 ```
 AZURE_STORAGE_ACCOUNT_NAME=yourdevstorage
 AZURE_STORAGE_CONTAINER_NAME=uploads
+PORT=8080
 ```
-For local runs with Managed Identity you typically test inside the Azure environment; locally you may use a Service Principal or `az login` + `AzureDeveloperCliCredential` as needed (not included here for brevity).
+For local runs with Managed Identity you typically test inside the Azure environment; locally you may use a Service Principal or `az login` + `DefaultAzureCredential` which will automatically detect your Azure CLI credentials.
 
 ### Authentication Flow
 1. Unauthenticated request hits Web App
@@ -111,9 +127,54 @@ For local runs with Managed Identity you typically test inside the Azure environ
 - Managed Identity avoids storing secrets
 - Role Assignments limited to Blob Data Contributor
 
+### Deploying the Application Code
+After deploying the infrastructure, deploy the application code:
+
+```pwsh
+# Option 1: Using Azure CLI (Local Git)
+cd app
+az webapp up --name <your-web-app-name> --resource-group $RG
+
+# Option 2: Using Git deployment (recommended)
+# 1. Commit your code to the repository
+git add .
+git commit -m "Add web application"
+git push
+
+# 2. Set up deployment from your repo
+az webapp deployment source config --name <your-web-app-name> \
+  --resource-group $RG \
+  --repo-url <your-repo-url> \
+  --branch main \
+  --manual-integration
+
+# Option 3: Using VS Code Azure App Service extension
+# Install the Azure App Service extension and right-click on the app folder to deploy
+```
+
+### Testing the Application
+1. Navigate to the Web App URL (output from deployment)
+2. Sign in with your Azure AD credentials
+3. You'll see the MagicFiles interface
+4. Upload files by:
+   - Dragging and dropping onto the upload area
+   - Clicking "Choose File" and selecting a file
+5. View uploaded files in the grid below
+6. Download or delete files using the action buttons
+
+### Troubleshooting
+- **401 Unauthorized when accessing blob storage**: Ensure the Web App's system-assigned managed identity has the "Storage Blob Data Contributor" role on the storage account
+- **Files not appearing**: Check the Azure Portal to verify files are in the container
+- **Upload fails**: Check file size limit (100MB) and ensure container exists
+- **Cannot sign in**: Verify the App Registration is configured correctly with the Web App URL as a redirect URI
+
 ### Extensibility Ideas
-- Add listing & secure download with SAS tokens
-- Integrate application insights for monitoring
+- Add file type restrictions and virus scanning
+- Implement file sharing with SAS tokens
+- Add file versioning and metadata
+- Integrate Application Insights for monitoring
+- Add search and filtering capabilities
+- Implement folder/directory structure
 - Add CI/CD via GitHub Actions or `azd`
 
 ### Troubleshooting
