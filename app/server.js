@@ -51,6 +51,35 @@ app.get('/api/config', (req, res) => {
     });
 });
 
+// Get user information from Easy Auth headers
+app.get('/api/user', (req, res) => {
+    try {
+        // Azure App Service Easy Auth injects user information in headers
+        const principalName = req.headers['x-ms-client-principal-name'];
+        const principalId = req.headers['x-ms-client-principal-id'];
+
+        // If Easy Auth headers are present
+        if (principalName) {
+            res.json({
+                name: principalName,
+                id: principalId || 'unknown'
+            });
+        } else {
+            // Fallback for local development
+            res.json({
+                name: 'Local User',
+                id: 'local-dev'
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching user info:', error);
+        res.status(500).json({
+            error: 'Failed to fetch user information',
+            message: error.message
+        });
+    }
+});
+
 // List all files in the container
 app.get('/api/files', async (req, res) => {
     try {

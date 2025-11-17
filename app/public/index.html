@@ -25,14 +25,34 @@
             --text-secondary: #605e5c;
             --border: #d2d0ce;
             --shadow: rgba(0, 0, 0, 0.1);
+            --body-gradient-start: #667eea;
+            --body-gradient-end: #764ba2;
+        }
+
+        [data-theme="dark"] {
+            --primary: #4a9eff;
+            --primary-dark: #2b7cd3;
+            --success: #6ccb5f;
+            --danger: #f1707b;
+            --warning: #ffb74d;
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-hover: #3a3a3a;
+            --text-primary: #e8e8e8;
+            --text-secondary: #b0b0b0;
+            --border: #444444;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --body-gradient-start: #2c3e50;
+            --body-gradient-end: #34495e;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--body-gradient-start) 0%, var(--body-gradient-end) 100%);
             min-height: 100vh;
             padding: 20px;
             color: var(--text-primary);
+            transition: background 0.3s ease;
         }
 
         .container {
@@ -47,8 +67,20 @@
         .header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            padding: 32px;
+            padding: 24px 32px;
+            position: relative;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .header-title {
             text-align: center;
+            flex: 1;
         }
 
         .header h1 {
@@ -60,6 +92,54 @@
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .user-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.3rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
         }
 
         .content {
@@ -419,6 +499,25 @@
                 font-size: 2rem;
             }
 
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header-top {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .user-info {
+                order: -1;
+            }
+
+            .theme-toggle {
+                position: absolute;
+                top: 16px;
+                right: 16px;
+            }
+
             .content {
                 padding: 20px;
             }
@@ -437,8 +536,19 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🗂️ MagicFiles</h1>
-            <p>Your secure cloud file manager</p>
+            <div class="header-top">
+                <div class="user-info" id="userInfo" style="visibility: hidden;">
+                    <div class="user-avatar" id="userAvatar">👤</div>
+                    <div class="user-name" id="userName">Loading...</div>
+                </div>
+                <div class="header-title">
+                    <h1>🗂️ MagicFiles</h1>
+                    <p>Your secure cloud file manager</p>
+                </div>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">
+                    🌙
+                </button>
+            </div>
         </div>
 
         <div class="content">
@@ -492,13 +602,56 @@
         let MAX_FILE_SIZE = 100 * 1024 * 1024; // Default 100MB in bytes
         let MAX_FILE_SIZE_MB = 100; // Default 100MB
         let currentView = 'grid'; // 'grid' or 'table'
+        let currentTheme = localStorage.getItem('theme') || 'light';
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            loadUserInfo();
             loadConfig();
             loadFiles();
             setupEventListeners();
         });
+
+        // Initialize theme
+        function initTheme() {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            updateThemeIcon();
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('theme', currentTheme);
+            updateThemeIcon();
+        }
+
+        // Update theme icon
+        function updateThemeIcon() {
+            const icon = currentTheme === 'light' ? '🌙' : '☀️';
+            document.getElementById('themeToggle').textContent = icon;
+        }
+
+        // Load user information
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/user');
+                const userData = await response.json();
+
+                if (response.ok && userData.name) {
+                    const userInfo = document.getElementById('userInfo');
+                    const userName = document.getElementById('userName');
+                    const userAvatar = document.getElementById('userAvatar');
+
+                    userName.textContent = userData.name;
+                    userAvatar.textContent = userData.name.charAt(0).toUpperCase();
+                    userInfo.style.visibility = 'visible';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
 
         // Load configuration from server
         async function loadConfig() {
