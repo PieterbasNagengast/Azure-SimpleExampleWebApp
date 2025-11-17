@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#grad)"/>
+  
+  <!-- Folder icon -->
+  <path d="M 25 35 L 40 35 L 45 30 L 75 30 L 75 70 L 25 70 Z" fill="#ffffff" opacity="0.95"/>
+  <path d="M 25 35 L 40 35 L 45 30 L 75 30 L 75 40 L 25 40 Z" fill="#ffffff" opacity="1"/>
+  
+  <!-- Magic sparkle -->
+  <circle cx="65" cy="55" r="3" fill="#FFD700"/>
+  <path d="M 65 48 L 66 54 L 65 60 L 64 54 Z" fill="#FFD700"/>
+  <path d="M 58 55 L 64 56 L 70 55 L 64 54 Z" fill="#FFD700"/>
+</svg>
