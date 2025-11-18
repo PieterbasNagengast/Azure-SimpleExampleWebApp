@@ -12,6 +12,9 @@ param appName string
 ])
 param appServicePlanSku string = 'B1'
 
+@description('The capacity (number of instances) for the App Service Plan')
+param skuCapacity int = 1
+
 @description('The SKU for the Storage Account')
 @allowed([
   'Standard_LRS'
@@ -142,6 +145,7 @@ module webServerFarm_AVM 'br/public:avm/res/web/serverfarm:0.5.0' = {
     skuName: appServicePlanSku
     kind: 'linux'
     reserved: true
+    skuCapacity: skuCapacity
     enableTelemetry: avmTelemetry
   }
 }
