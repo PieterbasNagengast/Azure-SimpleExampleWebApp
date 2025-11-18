@@ -79,16 +79,22 @@ jobs:
             echo "Preview of changes that will be made:" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
-            whatif=$(az deployment group what-if \
+            az deployment group what-if \
               --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
               --template-file ./infra/main.bicep \
               --parameters ./infra/main.bicepparam \
               --result-format FullResourcePayloads \
-              --output json)
+              --output json > whatif-results.json 2>&1 || true
 
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "$whatif" | jq -r '.changes[] | "[\(.changeType)] \(.resourceId)"' >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
+            if [ -s whatif-results.json ] && jq -e . whatif-results.json >/dev/null 2>&1; then
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              jq -r '.changes[]? | "[\(.changeType)] \(.resourceId)"' whatif-results.json >> $GITHUB_STEP_SUMMARY || echo "No changes detected" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            else
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              cat whatif-results.json >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
 
       - name: Security and Best Practices Scan
         uses: azure/cli@v2
