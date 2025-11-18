@@ -111,6 +111,23 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Get Access token for Graph
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            echo "## 🔐 Acquiring Access Token for Microsoft Graph" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            accessToken=$(az account get-access-token --resource-type ms-graph --query accessToken --output tsv)
+
+            if [ -n "$accessToken" ]; then
+              echo "✅ Successfully acquired access token for Microsoft Graph." >> $GITHUB_STEP_SUMMARY
+              echo "accessToken=$accessToken" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Failed to acquire access token for Microsoft Graph." >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+
       - name: Deploy Bicep Infrastructure
         uses: azure/arm-deploy@v2
         with:
