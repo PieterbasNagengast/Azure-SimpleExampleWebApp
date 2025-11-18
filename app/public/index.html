@@ -253,6 +253,67 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .search-container {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 40px 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .clear-search {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 1.2rem;
+            display: none;
+        }
+
+        .clear-search:hover {
+            color: var(--text-primary);
+        }
+
+        .clear-search.show {
+            display: block;
         }
 
         .files-header h2 {
@@ -509,6 +570,16 @@
                 gap: 12px;
             }
 
+            .files-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-container {
+                max-width: 100%;
+                order: -1;
+            }
+
             .user-info {
                 order: -1;
             }
@@ -572,6 +643,15 @@
             <div class="files-section">
                 <div class="files-header">
                     <h2>My Files</h2>
+                    <div class="search-container">
+                        <input type="text" 
+                               id="searchInput" 
+                               class="search-input" 
+                               placeholder="Search files..." 
+                               oninput="filterFiles()">
+                        <span class="search-icon" id="searchIcon">🔍</span>
+                        <button class="clear-search" id="clearSearch" onclick="clearSearch()" title="Clear search">×</button>
+                    </div>
                     <div class="files-header-actions">
                         <div class="view-toggle">
                             <button class="view-toggle-btn active" id="gridViewBtn" onclick="toggleView('grid')"
@@ -600,10 +680,12 @@
     <script>
         // Global state
         let files = [];
+        let filteredFiles = [];
         let MAX_FILE_SIZE = 100 * 1024 * 1024; // Default 100MB in bytes
         let MAX_FILE_SIZE_MB = 100; // Default 100MB
         let currentView = 'grid'; // 'grid' or 'table'
         let currentTheme = localStorage.getItem('theme') || 'light';
+        let searchQuery = '';
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -716,7 +798,7 @@
 
                 if (response.ok) {
                     files = data.files;
-                    renderFiles();
+                    filterFiles(); // Apply current search filter
                 } else {
                     showStatus('Failed to load files: ' + data.message, 'error');
                 }
@@ -725,6 +807,34 @@
             } finally {
                 showLoading(false);
             }
+        }
+
+        // Filter files based on search query
+        function filterFiles() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const clearBtn = document.getElementById('clearSearch');
+            const searchIcon = document.getElementById('searchIcon');
+            
+            if (searchQuery) {
+                clearBtn.classList.add('show');
+                searchIcon.style.display = 'none';
+                filteredFiles = files.filter(file => 
+                    getDisplayName(file.name).toLowerCase().includes(searchQuery) ||
+                    file.name.toLowerCase().includes(searchQuery)
+                );
+            } else {
+                clearBtn.classList.remove('show');
+                searchIcon.style.display = 'block';
+                filteredFiles = files;
+            }
+            
+            renderFiles();
+        }
+
+        // Clear search
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            filterFiles();
         }
 
         // Toggle view between grid and table
@@ -750,6 +860,17 @@
                 return;
             }
 
+            if (filteredFiles.length === 0) {
+                filesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <h3>No files found</h3>
+                        <p>No files match your search "${escapeHtml(searchQuery)}"</p>
+                    </div>
+                `;
+                return;
+            }
+
             if (currentView === 'grid') {
                 renderGridView(filesContainer);
             } else {
@@ -760,7 +881,7 @@
         // Render grid view
         function renderGridView(container) {
             container.className = 'files-grid';
-            container.innerHTML = files.map(file => `
+            container.innerHTML = filteredFiles.map(file => `
                 <div class="file-card">
                     <div class="file-icon">${getFileIcon(file.name)}</div>
                     <div class="file-name">${getDisplayName(file.name)}</div>
@@ -793,7 +914,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${files.map(file => `
+                        ${filteredFiles.map(file => `
                             <tr>
                                 <td><span class="file-icon">${getFileIcon(file.name)}</span></td>
                                 <td><span class="file-name">${getDisplayName(file.name)}</span></td>
