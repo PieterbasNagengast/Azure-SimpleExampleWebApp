@@ -11,6 +11,14 @@ const port = process.env.PORT || 8080;
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB) || 100;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
+// Allowed file types configuration (comma-separated extensions or * for all)
+const ALLOWED_FILE_TYPES = process.env.ALLOWED_FILE_TYPES || '*';
+const allowedExtensions = ALLOWED_FILE_TYPES === '*' ? null :
+    ALLOWED_FILE_TYPES.split(',').map(ext => ext.trim().toLowerCase());
+
+// Default theme mode configuration
+const DEFAULT_THEME_MODE = process.env.DEFAULT_THEME_MODE || 'auto';
+
 // Configure multer for memory storage
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -47,7 +55,10 @@ app.get('/api/health', (req, res) => {
 app.get('/api/config', (req, res) => {
     res.json({
         maxFileSizeMB: MAX_FILE_SIZE_MB,
-        maxFileSizeBytes: MAX_FILE_SIZE_BYTES
+        maxFileSizeBytes: MAX_FILE_SIZE_BYTES,
+        allowedFileTypes: ALLOWED_FILE_TYPES,
+        allowedExtensions: allowedExtensions,
+        defaultThemeMode: DEFAULT_THEME_MODE
     });
 });
 
@@ -133,6 +144,17 @@ app.post('/api/upload', (req, res) => {
         try {
             if (!req.file) {
                 return res.status(400).json({ error: 'No file provided' });
+            }
+
+            // Validate file type if restrictions are set
+            if (allowedExtensions) {
+                const fileExt = path.extname(req.file.originalname).toLowerCase();
+                if (!allowedExtensions.includes(fileExt)) {
+                    return res.status(400).json({
+                        error: 'File type not allowed',
+                        message: `Only ${ALLOWED_FILE_TYPES} files are allowed`
+                    });
+                }
             }
 
             const blobName = `${Date.now()}-${req.file.originalname}`;

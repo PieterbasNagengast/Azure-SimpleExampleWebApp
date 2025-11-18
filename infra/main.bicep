@@ -25,6 +25,17 @@ param storageSku string = 'Standard_LRS'
 @maxValue(500)
 param maxFileSizeMB int = 100
 
+@description('Comma-separated list of allowed file extensions (e.g., .pdf,.jpg,.png) or * for all types')
+param allowedFileTypes string = '*'
+
+@description('Default theme mode for the application')
+@allowed([
+  'auto'
+  'light'
+  'dark'
+])
+param defaultThemeMode string = 'auto'
+
 @description('The address prefix for the Virtual Network')
 param vnetAddressPrefix string = '192.168.0.0/25'
 
@@ -159,6 +170,14 @@ module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
         {
           name: 'MAX_FILE_SIZE_MB'
           value: string(maxFileSizeMB)
+        }
+        {
+          name: 'ALLOWED_FILE_TYPES'
+          value: allowedFileTypes
+        }
+        {
+          name: 'DEFAULT_THEME_MODE'
+          value: defaultThemeMode
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
