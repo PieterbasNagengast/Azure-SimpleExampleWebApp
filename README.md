@@ -37,29 +37,32 @@ This project deploys a simple Node.js (Express) file upload web application to A
 
 ### Architecture Diagram
 ```mermaid
-flowchart LR
-	subgraph Client
-		U[User] --> B[Browser]
-	end
-	B -->|HTTPS| WA["App Service Web App<br/>Static + Express"]
-	WA -->|Auth Redirect| AAD[(Azure AD)]
-	AAD -->|Token| WA
-	WA -->|Managed Identity| MI["Managed Identities<br/>System + User"]
-	MI -->|Blob Data Contributor| ST["Storage Account<br/>Private Blob Container"]
-
-	subgraph Deployment["Bicep Deployment"]
-		M[main.bicep] --> SA[Storage Account]
-		M --> PLAN[App Service Plan]
-		M --> WEB[Web App]
-		M --> UAMI[User Assigned MI]
-		M --> APPREG[App Registration]
-		M --> AUTH[Auth Settings]
-	end
-
-	WEB -. references .-> UAMI
-	WEB -. appSettings .-> ST
-	WEB -. enforced by .-> AUTH
-	AUTH -. uses .-> APPREG
+graph TB
+    %% Resource definitions with colors
+    NET[Network Module<br/>VNet, Subnets, NSGs, Private DNS]:::networking
+    UAMI[User Assigned<br/>Managed Identity]:::identity
+    APPREG[App Registration<br/>Federated Credential]:::identity
+    ASP[App Service Plan<br/>Linux]:::compute
+    WEBAPP[Web App<br/>Node.js 24 LTS]:::compute
+    AUTH[Auth Settings<br/>authsettingsV2]:::security
+    STORAGE[Storage Account<br/>Blob Container]:::storage
+    
+    %% Dependencies
+    NET --> WEBAPP
+    NET --> STORAGE
+    UAMI --> APPREG
+    UAMI --> WEBAPP
+    ASP --> WEBAPP
+    WEBAPP --> AUTH
+    WEBAPP --> STORAGE
+    APPREG --> AUTH
+    
+    %% Styling
+    classDef networking fill:#0078D4,stroke:#004578,stroke-width:2px,color:#fff
+    classDef identity fill:#50E6FF,stroke:#0078D4,stroke-width:2px,color:#000
+    classDef compute fill:#00BCF2,stroke:#0078D4,stroke-width:2px,color:#fff
+    classDef security fill:#FF6F00,stroke:#C43E00,stroke-width:2px,color:#fff
+    classDef storage fill:#7FBA00,stroke:#4A7000,stroke-width:2px,color:#fff
 ```
 
 ### Resource Naming Pattern
