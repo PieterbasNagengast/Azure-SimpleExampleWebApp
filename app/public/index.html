@@ -95,6 +95,23 @@
             opacity: 0.9;
         }
 
+        .version-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            font-size: 0.75rem;
+            opacity: 0.7;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 12px;
+            cursor: help;
+            transition: opacity 0.2s ease;
+        }
+
+        .version-badge:hover {
+            opacity: 1;
+        }
+
         .user-info {
             display: flex;
             align-items: center;
@@ -647,6 +664,9 @@
                     🌙
                 </button>
             </div>
+            <div class="version-badge" id="versionBadge" title="Click for details" onclick="showVersionInfo()">
+                Loading...
+            </div>
         </div>
 
         <div class="content">
@@ -715,12 +735,14 @@
         let defaultThemeMode = 'auto';
         let sortColumn = null; // 'name', 'size', or 'date'
         let sortDirection = 'asc'; // 'asc' or 'desc'
+        let versionInfo = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
             loadUserInfo();
             loadConfig();
+            loadVersion();
             loadFiles();
             setupEventListeners();
         });
@@ -800,6 +822,40 @@
                 themeToggle.textContent = '☀️';
                 themeToggle.title = 'Theme: Dark';
             }
+        }
+
+        // Load version information
+        async function loadVersion() {
+            try {
+                const response = await fetch('/version.json');
+                versionInfo = await response.json();
+
+                if (response.ok && versionInfo.version) {
+                    const versionBadge = document.getElementById('versionBadge');
+                    versionBadge.textContent = `v${versionInfo.version}`;
+
+                    // Build tooltip
+                    const buildDate = versionInfo.buildDate ? new Date(versionInfo.buildDate).toLocaleString() : 'Unknown';
+                    const commit = versionInfo.commit ? versionInfo.commit.substring(0, 7) : 'local';
+                    versionBadge.title = `Version: ${versionInfo.version}\nBuild: ${buildDate}\nCommit: ${commit}`;
+                }
+            } catch (error) {
+                console.error('Error loading version:', error);
+                document.getElementById('versionBadge').textContent = 'v1.0.0';
+            }
+        }
+
+        // Show version info dialog
+        function showVersionInfo() {
+            if (!versionInfo) return;
+
+            const buildDate = versionInfo.buildDate ? new Date(versionInfo.buildDate).toLocaleString() : 'Unknown';
+            const commit = versionInfo.commit || 'local-dev';
+
+            showStatus(
+                `Version: ${versionInfo.version} | Build: ${buildDate} | Commit: ${commit}`,
+                'info'
+            );
         }
 
         // Load user information
