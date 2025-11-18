@@ -1,0 +1,175 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate-infrastructure:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Lint Bicep files
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            echo "## 🔍 Bicep Linting Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            az bicep lint --file ./infra/main.bicep --diagnostics-format json > lint-results.json || true
+
+            if [ -s lint-results.json ]; then
+              echo "### Linting Output:" >> $GITHUB_STEP_SUMMARY
+              echo '```json' >> $GITHUB_STEP_SUMMARY
+              cat lint-results.json >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ No linting issues found." >> $GITHUB_STEP_SUMMARY
+            fi
+
+      - name: Validate Bicep template
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            echo "## ✅ Template Validation" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            validation=$(az deployment group validate \
+              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              --template-file ./infra/main.bicep \
+              --parameters ./infra/main.bicepparam \
+              --output json)
+
+            validationState=$(echo "$validation" | jq -r '.properties.provisioningState')
+
+            if [ "$validationState" == "Succeeded" ]; then
+              echo "✅ Template validation passed successfully!" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Template validation failed!" >> $GITHUB_STEP_SUMMARY
+              echo '```json' >> $GITHUB_STEP_SUMMARY
+              echo "$validation" | jq '.properties.error' >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+
+      - name: What-If Analysis
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            echo "## 📊 What-If Analysis" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Preview of changes that will be made:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            whatif=$(az deployment group what-if \
+              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              --template-file ./infra/main.bicep \
+              --parameters ./infra/main.bicepparam \
+              --result-format FullResourcePayloads \
+              --output json)
+
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$whatif" | jq -r '.changes[] | "[\(.changeType)] \(.resourceId)"' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Security and Best Practices Scan
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            echo "## 🔒 Security Scan" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Build the bicep file to get ARM template
+            az bicep build --file ./infra/main.bicep --outfile ./infra/main.json
+
+            # Check for common security issues
+            issues=0
+
+            # Check for hardcoded secrets
+            if grep -r "password\|secret\|key" ./infra/*.bicep | grep -v "param\|var\|@secure" > /dev/null; then
+              echo "⚠️ Potential hardcoded secrets detected" >> $GITHUB_STEP_SUMMARY
+              issues=$((issues+1))
+            fi
+
+            # Check for public access
+            if grep -i "publicAccess.*Enable" ./infra/*.bicep > /dev/null; then
+              echo "⚠️ Public access enabled on resources" >> $GITHUB_STEP_SUMMARY
+              issues=$((issues+1))
+            fi
+
+            if [ $issues -eq 0 ]; then
+              echo "✅ No security issues detected" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "⚠️ Found $issues potential security issue(s). Review recommended." >> $GITHUB_STEP_SUMMARY
+            fi
+
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: validate-infrastructure
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep Infrastructure
+        uses: azure/arm-deploy@v2
+        with:
+          scope: resourcegroup
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          template: ./infra/main.bicep
+          parameters: ./infra/main.bicepparam
+          failOnStdErr: false
+          deploymentName: "infra-deploy-${{ github.run_number }}"
+
+      - name: Get Deployment Outputs
+        id: outputs
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            outputs=$(az deployment group show \
+              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              --name infra-deploy-${{ github.run_number }} \
+              --query properties.outputs \
+              --output json)
+            echo "Deployment outputs:"
+            echo "$outputs" | jq '.'
+            webAppUrl=$(echo "$outputs" | jq -r '.webAppUrl.value')
+            echo "webAppUrl=$webAppUrl" >> $GITHUB_OUTPUT
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🎉 Infrastructure Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Name:** infra-deploy-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group:** ${{ secrets.AZURE_RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Web App URL:** ${{ steps.outputs.outputs.webAppUrl }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All infrastructure resources have been deployed successfully." >> $GITHUB_STEP_SUMMARY
