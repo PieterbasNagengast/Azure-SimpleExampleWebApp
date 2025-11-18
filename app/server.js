@@ -50,7 +50,35 @@ const containerClient = blobServiceClient.getContainerClient(containerName);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Health check endpoint
+// Health check endpoint (standard path for load balancers/gateways)
+app.get('/health', async (req, res) => {
+    try {
+        // Check storage connectivity
+        await containerClient.exists();
+
+        res.status(200).json({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            service: 'MagicFiles',
+            checks: {
+                storage: 'healthy'
+            }
+        });
+    } catch (error) {
+        console.error('Health check failed:', error);
+        res.status(503).json({
+            status: 'unhealthy',
+            timestamp: new Date().toISOString(),
+            service: 'MagicFiles',
+            checks: {
+                storage: 'unhealthy'
+            },
+            error: error.message
+        });
+    }
+});
+
+// Legacy health check endpoint (kept for backwards compatibility)
 app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
