@@ -1094,6 +1094,7 @@
                     <div class="file-name">${getDisplayName(file.name)}</div>
                     <div class="file-meta">Size: ${formatBytes(file.size)}</div>
                     <div class="file-meta">Modified: ${formatDate(file.lastModified)}</div>
+                    <div class="file-meta">Uploaded by: ${escapeHtml(file.uploadedBy)}</div>
                     <div class="file-actions">
                         <button class="btn btn-success" onclick="downloadFile('${escapeHtml(file.name)}')">
                             ⬇️ Download
@@ -1125,6 +1126,7 @@
                             <th class="${getSortClass('name')}" onclick="sortTable('name')">Name</th>
                             <th class="${getSortClass('size')}" onclick="sortTable('size')" style="width: 120px;">Size</th>
                             <th class="${getSortClass('date')}" onclick="sortTable('date')" style="width: 180px;">Modified</th>
+                            <th style="width: 200px;">Uploaded By</th>
                             <th style="width: 180px;">Actions</th>
                         </tr>
                     </thead>
@@ -1135,6 +1137,7 @@
                                 <td><span class="file-name">${getDisplayName(file.name)}</span></td>
                                 <td>${formatBytes(file.size)}</td>
                                 <td>${formatDate(file.lastModified)}</td>
+                                <td>${escapeHtml(file.uploadedBy)}</td>
                                 <td>
                                     <div class="file-actions">
                                         <button class="btn btn-success" onclick="downloadFile('${escapeHtml(file.name)}')">

@@ -130,7 +130,7 @@ app.get('/api/files', async (req, res) => {
     try {
         const files = [];
 
-        for await (const blob of containerClient.listBlobsFlat()) {
+        for await (const blob of containerClient.listBlobsFlat({ includeMetadata: true })) {
             const blobClient = containerClient.getBlobClient(blob.name);
             const properties = await blobClient.getProperties();
 
@@ -139,6 +139,7 @@ app.get('/api/files', async (req, res) => {
                 size: properties.contentLength,
                 contentType: properties.contentType,
                 lastModified: properties.lastModified,
+                uploadedBy: properties.metadata?.uploadedby || 'Unknown',
                 url: blobClient.url
             });
         }
@@ -191,12 +192,19 @@ app.post('/api/upload', (req, res) => {
                 }
             }
 
+            // Get user UPN from Easy Auth headers
+            const userUpn = req.headers['x-ms-client-principal-name'] || 'Local User';
+
             const blobName = `${Date.now()}-${req.file.originalname}`;
             const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
             await blockBlobClient.uploadData(req.file.buffer, {
                 blobHTTPHeaders: {
                     blobContentType: req.file.mimetype
+                },
+                metadata: {
+                    uploadedby: userUpn,
+                    uploaddate: new Date().toISOString()
                 }
             });
 
