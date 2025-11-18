@@ -33,6 +33,12 @@ resource clientApp 'Microsoft.Graph/applications@v1.0' = {
   displayName: clientAppDisplayName
   signInAudience: 'AzureADMyOrg'
   serviceManagementReference: empty(serviceManagementReference) ? null : serviceManagementReference
+  web: {
+    implicitGrantSettings: {
+      enableIdTokenIssuance: true
+      enableAccessTokenIssuance: true
+    }
+  }
   spa: {
     redirectUris: [
       '${webAppEndpoint}/.auth/login/aad/callback'
