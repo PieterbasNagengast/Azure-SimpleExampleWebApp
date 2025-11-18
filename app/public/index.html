@@ -91,7 +91,7 @@
         body {
             font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-primary);
-            background-image: 
+            background-image:
                 radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 70%, rgba(255, 0, 110, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 50% 50%, rgba(0, 245, 160, 0.05) 0%, transparent 70%);
@@ -110,14 +110,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                repeating-linear-gradient(
-                    0deg,
+            background:
+                repeating-linear-gradient(0deg,
                     transparent,
                     transparent 2px,
                     rgba(0, 212, 255, 0.03) 2px,
-                    rgba(0, 212, 255, 0.03) 4px
-                );
+                    rgba(0, 212, 255, 0.03) 4px);
             pointer-events: none;
             z-index: 1;
         }
@@ -130,7 +128,7 @@
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
-            box-shadow: 
+            box-shadow:
                 0 8px 32px var(--shadow),
                 0 0 100px var(--shadow-glow),
                 inset 0 0 80px rgba(0, 212, 255, 0.02);
@@ -151,9 +149,9 @@
         }
 
         .header {
-            background: linear-gradient(135deg, 
-                rgba(0, 212, 255, 0.1) 0%, 
-                rgba(255, 0, 110, 0.1) 100%),
+            background: linear-gradient(135deg,
+                    rgba(0, 212, 255, 0.1) 0%,
+                    rgba(255, 0, 110, 0.1) 100%),
                 var(--bg-secondary);
             border-bottom: 1px solid var(--border);
             color: var(--text-primary);
@@ -175,10 +173,23 @@
         }
 
         @keyframes headerGlow {
-            0%, 100% { transform: translate(0%, 0%) scale(1); }
-            25% { transform: translate(10%, 10%) scale(1.1); }
-            50% { transform: translate(-10%, 5%) scale(0.9); }
-            75% { transform: translate(5%, -10%) scale(1.05); }
+
+            0%,
+            100% {
+                transform: translate(0%, 0%) scale(1);
+            }
+
+            25% {
+                transform: translate(10%, 10%) scale(1.1);
+            }
+
+            50% {
+                transform: translate(-10%, 5%) scale(0.9);
+            }
+
+            75% {
+                transform: translate(5%, -10%) scale(1.05);
+            }
         }
 
         .header-top {
@@ -208,8 +219,15 @@
         }
 
         @keyframes titlePulse {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.2); }
+
+            0%,
+            100% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.2);
+            }
         }
 
         .header p {
@@ -391,8 +409,15 @@
         }
 
         @keyframes iconFloat {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         .upload-area h2 {
