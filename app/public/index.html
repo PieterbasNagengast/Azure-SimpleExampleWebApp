@@ -644,13 +644,11 @@
                 <div class="files-header">
                     <h2>My Files</h2>
                     <div class="search-container">
-                        <input type="text" 
-                               id="searchInput" 
-                               class="search-input" 
-                               placeholder="Search files..." 
-                               oninput="filterFiles()">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search files..."
+                            oninput="filterFiles()">
                         <span class="search-icon" id="searchIcon">🔍</span>
-                        <button class="clear-search" id="clearSearch" onclick="clearSearch()" title="Clear search">×</button>
+                        <button class="clear-search" id="clearSearch" onclick="clearSearch()"
+                            title="Clear search">×</button>
                     </div>
                     <div class="files-header-actions">
                         <div class="view-toggle">
@@ -814,11 +812,11 @@
             searchQuery = document.getElementById('searchInput').value.toLowerCase();
             const clearBtn = document.getElementById('clearSearch');
             const searchIcon = document.getElementById('searchIcon');
-            
+
             if (searchQuery) {
                 clearBtn.classList.add('show');
                 searchIcon.style.display = 'none';
-                filteredFiles = files.filter(file => 
+                filteredFiles = files.filter(file =>
                     getDisplayName(file.name).toLowerCase().includes(searchQuery) ||
                     file.name.toLowerCase().includes(searchQuery)
                 );
@@ -827,7 +825,7 @@
                 searchIcon.style.display = 'block';
                 filteredFiles = files;
             }
-            
+
             renderFiles();
         }
 
