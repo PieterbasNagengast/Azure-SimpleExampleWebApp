@@ -36,7 +36,7 @@ module subnetWebApp 'br/public:avm/res/network/virtual-network/subnet:0.1.3' = {
 
 module subnetPrivateEndpoint 'br/public:avm/res/network/virtual-network/subnet:0.1.3' = {
   params: {
-    name: nsgPrivateEndpointName
+    name: 'pe-subnet'
     virtualNetworkName: vnet.outputs.name
     addressPrefix: cidrSubnet(vnetAddressPrefix, 27, 1)
     networkSecurityGroupResourceId: nsgPrivateEndpoint.outputs.resourceId
