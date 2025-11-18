@@ -130,7 +130,6 @@ jobs:
 
   deploy-infrastructure:
     runs-on: ubuntu-latest
-    environment: production
     needs: validate-infrastructure
 
     steps:
