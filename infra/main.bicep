@@ -36,6 +36,12 @@ param allowedFileTypes string = '*'
 ])
 param defaultThemeMode string = 'auto'
 
+@description('Application title displayed in the header')
+param appTitle string = 'MagicFiles'
+
+@description('Application subtitle displayed in the header')
+param appSubtitle string = 'Your secure cloud file manager'
+
 @description('The address prefix for the Virtual Network')
 param vnetAddressPrefix string = '192.168.0.0/25'
 
@@ -178,6 +184,14 @@ module webSsite_AVM 'br/public:avm/res/web/site:0.19.4' = {
         {
           name: 'DEFAULT_THEME_MODE'
           value: defaultThemeMode
+        }
+        {
+          name: 'APP_TITLE'
+          value: appTitle
+        }
+        {
+          name: 'APP_SUBTITLE'
+          value: appSubtitle
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'

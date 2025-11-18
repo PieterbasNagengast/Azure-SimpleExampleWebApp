@@ -19,6 +19,10 @@ const allowedExtensions = ALLOWED_FILE_TYPES === '*' ? null :
 // Default theme mode configuration
 const DEFAULT_THEME_MODE = process.env.DEFAULT_THEME_MODE || 'auto';
 
+// Application title and subtitle configuration
+const APP_TITLE = process.env.APP_TITLE || 'MagicFiles';
+const APP_SUBTITLE = process.env.APP_SUBTITLE || 'Your secure cloud file manager';
+
 // Configure multer for memory storage
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -58,7 +62,9 @@ app.get('/api/config', (req, res) => {
         maxFileSizeBytes: MAX_FILE_SIZE_BYTES,
         allowedFileTypes: ALLOWED_FILE_TYPES,
         allowedExtensions: allowedExtensions,
-        defaultThemeMode: DEFAULT_THEME_MODE
+        defaultThemeMode: DEFAULT_THEME_MODE,
+        appTitle: APP_TITLE,
+        appSubtitle: APP_SUBTITLE
     });
 });
 
