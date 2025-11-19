@@ -63,7 +63,16 @@ var uamiName = 'uami-${appName}-${uniqueSuffix}'
 var vnetName = 'vnet-${appName}-${uniqueSuffix}'
 var nsgWebAppName = 'nsg-webapp-subnet-${appName}-${uniqueSuffix}'
 var nsgPrivateEndpointName = 'nsg-pe-subnet-${appName}-${uniqueSuffix}'
+var lawName = 'law-${appName}-${uniqueSuffix}'
 var storageContainerName = 'uploads'
+
+// Log Analytics Workspace
+module law 'br/public:avm/res/operational-insights/workspace:0.13.0' = {
+  params: {
+    name: lawName
+    enableTelemetry: avmTelemetry
+  }
+}
 
 // Storage Account with Blob Container
 module storageAccount_AVM 'br/public:avm/res/storage/storage-account:0.29.0' = {
@@ -101,6 +110,18 @@ module storageAccount_AVM 'br/public:avm/res/storage/storage-account:0.29.0' = {
         {
           name: storageContainerName
           publicAccess: 'None'
+        }
+      ]
+      diagnosticSettings: [
+        {
+          name: 'storageDiagnostics'
+          workspaceResourceId: law.outputs.resourceId
+          logCategoriesAndGroups: [
+            {
+              categoryGroup: 'AllLogs'
+              enabled: true
+            }
+          ]
         }
       ]
     }
