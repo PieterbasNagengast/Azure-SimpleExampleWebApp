@@ -15,6 +15,7 @@ permissions:
 jobs:
   validate-infrastructure:
     runs-on: ubuntu-latest
+    environment: validation-approval
 
     steps:
       - name: Checkout code

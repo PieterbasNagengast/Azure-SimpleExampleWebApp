@@ -51,10 +51,10 @@ param vnetAddressPrefix string = '192.168.0.0/25'
 @description('Enable AVM telemetry for the Virtual Network')
 param avmTelemetry bool = false
 
-// Variables
+// Variable to create unique suffix for resource names
 var uniqueSuffix = take(uniqueString(resourceGroup().id), 5)
 
-// Resource names
+// Variables to generate resource names
 var storageAccountName = 'st${appName}${uniqueSuffix}'
 var appServicePlanName = 'asp-${appName}-${uniqueSuffix}'
 var webAppName = 'app-${appName}-${uniqueSuffix}'
@@ -77,7 +77,7 @@ module network 'modules/network.bicep' = {
   }
 }
 
-// Storage Module
+// Backend Module (Deploys Storage Account with Private Endpoint, LAW, etc.)
 module backEnd 'modules/backend.bicep' = {
   name: 'storage'
   params: {
@@ -92,7 +92,7 @@ module backEnd 'modules/backend.bicep' = {
   }
 }
 
-// Web App Module
+// Frontend Module (deploys Web App, App Service Plan, UAMI, etc.)
 module frontEnd 'modules/frontend.bicep' = {
   name: 'webapp'
   params: {
