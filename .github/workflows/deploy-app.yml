@@ -1,0 +1,184 @@
+name: Deploy Application
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - "app/**"
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+                  cache: "npm"
+                  cache-dependency-path: "./app/package-lock.json"
+
+            - name: Install dependencies
+              working-directory: ./app
+              run: npm ci
+
+            - name: Run tests (if available)
+              working-directory: ./app
+              run: npm test --if-present
+
+            - name: Create deployment package
+              working-directory: ./app
+              run: |
+                  # Create a zip file with the application
+                  zip -r ../app-deployment.zip . \
+                    -x "*.git*" \
+                    -x "node_modules/*" \
+                    -x "*.md"
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: app-package
+                  path: app-deployment.zip
+                  retention-days: 1
+
+    deploy:
+        runs-on: ubuntu-latest
+        needs: build
+        environment: production
+
+        steps:
+            - name: Download artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: app-package
+
+            - name: Azure Login
+              uses: azure/login@v2
+              with:
+                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+            - name: Get Web App Name
+              id: webapp
+              uses: azure/cli@v2
+              with:
+                  inlineScript: |
+                      # Get the web app name from the resource group
+                      webAppName=$(az webapp list \
+                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+                        --query "[?contains(name, 'app-')].name | [0]" \
+                        --output tsv)
+
+                      if [ -z "$webAppName" ]; then
+                        echo "❌ Web App not found in resource group" >> $GITHUB_STEP_SUMMARY
+                        exit 1
+                      fi
+
+                      echo "webAppName=$webAppName" >> $GITHUB_OUTPUT
+                      echo "## 🚀 Deploying to Web App" >> $GITHUB_STEP_SUMMARY
+                      echo "**Web App Name:** $webAppName" >> $GITHUB_STEP_SUMMARY
+
+            - name: Deploy to Azure Web App
+              uses: azure/webapps-deploy@v3
+              with:
+                  app-name: ${{ steps.webapp.outputs.webAppName }}
+                  package: app-deployment.zip
+
+            - name: Update version.json
+              uses: azure/cli@v2
+              with:
+                  inlineScript: |
+                      # Read version from package.json
+                      cd app
+                      version=$(node -p "require('./package.json').version")
+                      buildDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+                      commit="${{ github.sha }}"
+
+                      # Create version.json
+                      cat > public/version.json <<EOF
+                      {
+                        "version": "$version",
+                        "buildDate": "$buildDate",
+                        "commit": "$commit"
+                      }
+                      EOF
+
+                      # Deploy just the version.json file using Kudu API
+                      webAppName="${{ steps.webapp.outputs.webAppName }}"
+                      publishProfile=$(az webapp deployment list-publishing-profiles \
+                        --name $webAppName \
+                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+                        --query "[?publishMethod=='FTP'].{url:publishUrl, username:userName, password:userPWD} | [0]" \
+                        --output json)
+
+                      ftpUrl=$(echo $publishProfile | jq -r '.url')
+                      ftpUser=$(echo $publishProfile | jq -r '.username')
+                      ftpPass=$(echo $publishProfile | jq -r '.password')
+
+                      # Upload version.json via FTP
+                      curl -T public/version.json \
+                        --user "$ftpUser:$ftpPass" \
+                        "$ftpUrl/site/wwwroot/public/version.json"
+
+            - name: Restart Web App
+              uses: azure/cli@v2
+              with:
+                  inlineScript: |
+                      az webapp restart \
+                        --name ${{ steps.webapp.outputs.webAppName }} \
+                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+                      echo "✅ Web App restarted successfully" >> $GITHUB_STEP_SUMMARY
+
+            - name: Get Web App URL
+              uses: azure/cli@v2
+              with:
+                  inlineScript: |
+                      webAppUrl=$(az webapp show \
+                        --name ${{ steps.webapp.outputs.webAppName }} \
+                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+                        --query "defaultHostName" \
+                        --output tsv)
+
+                      echo "## 🎉 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+                      echo "" >> $GITHUB_STEP_SUMMARY
+                      echo "**Web App URL:** https://$webAppUrl" >> $GITHUB_STEP_SUMMARY
+                      echo "**Version:** $(cd app && node -p "require('./package.json').version")" >> $GITHUB_STEP_SUMMARY
+                      echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+                      echo "" >> $GITHUB_STEP_SUMMARY
+                      echo "✅ Application deployed successfully!" >> $GITHUB_STEP_SUMMARY
+
+            - name: Health Check
+              uses: azure/cli@v2
+              with:
+                  inlineScript: |
+                      webAppUrl=$(az webapp show \
+                        --name ${{ steps.webapp.outputs.webAppName }} \
+                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+                        --query "defaultHostName" \
+                        --output tsv)
+
+                      echo "## 🏥 Health Check" >> $GITHUB_STEP_SUMMARY
+                      echo "" >> $GITHUB_STEP_SUMMARY
+
+                      # Wait a few seconds for the app to start
+                      sleep 10
+
+                      # Check health endpoint
+                      statusCode=$(curl -s -o /dev/null -w "%{http_code}" "https://$webAppUrl/health" || echo "000")
+
+                      if [ "$statusCode" == "200" ]; then
+                        echo "✅ Health check passed (HTTP $statusCode)" >> $GITHUB_STEP_SUMMARY
+                      else
+                        echo "⚠️ Health check returned HTTP $statusCode" >> $GITHUB_STEP_SUMMARY
+                      fi

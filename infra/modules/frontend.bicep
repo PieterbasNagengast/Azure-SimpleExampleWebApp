@@ -151,3 +151,4 @@ module appReg 'appregistration.bicep' = {
 
 output url string = 'https://${webSsite.outputs.defaultHostname}'
 output uamiPrincipalId string = uami.outputs.principalId
+output webAppName string = webSsite.outputs.name

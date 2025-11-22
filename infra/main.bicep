@@ -116,3 +116,6 @@ module frontEnd 'modules/frontend.bicep' = {
 // Outputs
 @description('The URL of the deployed Web App')
 output webAppUrl string = frontEnd.outputs.url
+
+@description('The name of the deployed Web App')
+output webAppName string = frontEnd.outputs.webAppName
