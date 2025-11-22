@@ -15,7 +15,6 @@ permissions:
 jobs:
   validate-infrastructure:
     runs-on: ubuntu-latest
-    environment: validation-approval
 
     steps:
       - name: Checkout code
@@ -100,6 +99,7 @@ jobs:
   deploy-infrastructure:
     runs-on: ubuntu-latest
     needs: validate-infrastructure
+    environment: validation-approval
 
     steps:
       - name: Checkout code
