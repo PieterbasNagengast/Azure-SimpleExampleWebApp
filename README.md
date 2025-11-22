@@ -1,3 +1,6 @@
+[![Deploy Application](https://github.com/PieterbasNagengast/Azure-SimpleExampleWebApp/actions/workflows/deploy-app.yml/badge.svg)](https://github.com/PieterbasNagengast/Azure-SimpleExampleWebApp/actions/workflows/deploy-app.yml)
+[![Deploy Infrastructure](https://github.com/PieterbasNagengast/Azure-SimpleExampleWebApp/actions/workflows/deploy-infra.yml/badge.svg)](https://github.com/PieterbasNagengast/Azure-SimpleExampleWebApp/actions/workflows/deploy-infra.yml)
+
 ## Azure Simple Example Web App
 
 This project deploys a simple Node.js (Express) file upload web application to Azure App Service (Linux) backed by an Azure Storage Account (Blob) using Managed Identity and protected with Azure Active Directory authentication configured through App Service Authentication ("Easy Auth") and a custom App Registration provisioned via Bicep.
