@@ -33,6 +33,25 @@ jobs:
               working-directory: ./app
               run: npm test --if-present
 
+            - name: Create version.json
+              working-directory: ./app
+              run: |
+                  # Read version from package.json
+                  version=$(node -p "require('./package.json').version")
+                  buildDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+                  commit="${{ github.sha }}"
+
+                  # Create version.json in public directory
+                  cat > public/version.json <<EOF
+                  {
+                    "version": "$version",
+                    "buildDate": "$buildDate",
+                    "commit": "$commit"
+                  }
+                  EOF
+
+                  echo "✅ Created version.json with version $version" >> $GITHUB_STEP_SUMMARY
+
             - name: Create deployment package
               working-directory: ./app
               run: |
@@ -91,43 +110,6 @@ jobs:
               with:
                   app-name: ${{ steps.webapp.outputs.webAppName }}
                   package: app-deployment.zip
-
-            - name: Update version.json
-              uses: azure/cli@v2
-              with:
-                  inlineScript: |
-                      webAppName="${{ steps.webapp.outputs.webAppName }}"
-                      buildDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-                      commit="${{ github.sha }}"
-
-                      # Get Kudu credentials
-                      publishProfile=$(az webapp deployment list-publishing-profiles \
-                        --name $webAppName \
-                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-                        --query "[?publishMethod=='MSDeploy'].{username:userName, password:userPWD} | [0]" \
-                        --output json)
-
-                      kuduUser=$(echo $publishProfile | jq -r '.username')
-                      kuduPass=$(echo $publishProfile | jq -r '.password')
-
-                      # Create version.json using Kudu VFS API
-                      versionJson=$(cat <<EOF
-                      {
-                        "version": "1.0.0",
-                        "buildDate": "$buildDate",
-                        "commit": "$commit"
-                      }
-                      EOF
-                      )
-
-                      # Upload to Kudu VFS API
-                      curl -X PUT \
-                        --user "$kuduUser:$kuduPass" \
-                        --data "$versionJson" \
-                        -H "Content-Type: application/json" \
-                        "https://$webAppName.scm.azurewebsites.net/api/vfs/site/wwwroot/public/version.json"
-
-                      echo "✅ version.json updated" >> $GITHUB_STEP_SUMMARY
 
             - name: Restart Web App
               uses: azure/cli@v2
