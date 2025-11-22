@@ -5,7 +5,6 @@ param avmTelemetry bool
 param webAppName string
 param storageAccountName string
 param storageContainerName string
-param userAssignedResourceId string
 
 param virtualNetworkSubnetResourceId string
 
@@ -15,9 +14,17 @@ param defaultThemeMode string
 param appTitle string
 param appSubtitle string
 
-param webAppIdentityId string
+param uamiName string
 
 var issuer = '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
+
+// User Assigned Managed Identity for Web App Entra ID authentication
+module uami 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.2' = {
+  params: {
+    name: uamiName
+    enableTelemetry: avmTelemetry
+  }
+}
 
 // App Service Plan
 module webServerFarm 'br/public:avm/res/web/serverfarm:0.5.0' = {
@@ -39,7 +46,7 @@ module webSsite 'br/public:avm/res/web/site:0.19.4' = {
     serverFarmResourceId: webServerFarm.outputs.resourceId
     managedIdentities: {
       userAssignedResourceIds: [
-        userAssignedResourceId
+        uami.outputs.resourceId
       ]
       systemAssigned: true
     }
@@ -138,8 +145,9 @@ module appReg 'appregistration.bicep' = {
     clientAppDisplayName: 'MagicFiles Web App'
     issuer: issuer
     webAppEndpoint: 'https://${webSsite.outputs.defaultHostname}'
-    webAppIdentityId: webAppIdentityId
+    webAppIdentityId: uami.outputs.principalId
   }
 }
 
 output url string = 'https://${webSsite.outputs.defaultHostname}'
+output uamiPrincipalId string = uami.outputs.principalId

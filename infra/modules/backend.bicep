@@ -3,8 +3,8 @@ param storageSku string
 param storageContainerName string
 param subnetResourceId string
 param privateDnsZoneResourceId string
-param workspaceResourceId string
 param principalId string
+param lawName string
 param avmTelemetry bool
 
 // Storage Account with Blob Container
@@ -48,7 +48,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.29.0' = {
       diagnosticSettings: [
         {
           name: 'storageDiagnostics'
-          workspaceResourceId: workspaceResourceId
+          workspaceResourceId: law.outputs.resourceId
           logCategoriesAndGroups: [
             {
               categoryGroup: 'AllLogs'
@@ -64,6 +64,14 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.29.0' = {
         roleDefinitionIdOrName: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
       }
     ]
+    enableTelemetry: avmTelemetry
+  }
+}
+
+// Log Analytics Workspace
+module law 'br/public:avm/res/operational-insights/workspace:0.13.0' = {
+  params: {
+    name: lawName
     enableTelemetry: avmTelemetry
   }
 }

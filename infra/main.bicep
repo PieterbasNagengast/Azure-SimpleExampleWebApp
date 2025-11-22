@@ -66,7 +66,7 @@ var lawName = 'law-${appName}-${uniqueSuffix}'
 var storageContainerName = 'uploads'
 
 // Networking Module
-module networking 'modules/network.bicep' = {
+module network 'modules/network.bicep' = {
   name: 'networking'
   params: {
     vnetName: vnetName
@@ -78,22 +78,22 @@ module networking 'modules/network.bicep' = {
 }
 
 // Storage Module
-module storage 'modules/storage.bicep' = {
+module backEnd 'modules/backend.bicep' = {
   name: 'storage'
   params: {
     storageAccountName: storageAccountName
     storageSku: storageSku
     storageContainerName: storageContainerName
-    subnetResourceId: networking.outputs.subnetPrivateEndpointId
-    privateDnsZoneResourceId: networking.outputs.privDNSzoneId
-    workspaceResourceId: law.outputs.resourceId
-    principalId: uami.outputs.principalId
+    subnetResourceId: network.outputs.subnetPrivateEndpointId
+    privateDnsZoneResourceId: network.outputs.privDNSzoneId
+    lawName: lawName
+    principalId: frontEnd.outputs.uamiPrincipalId
     avmTelemetry: avmTelemetry
   }
 }
 
 // Web App Module
-module webapp 'modules/webapp.bicep' = {
+module frontEnd 'modules/frontend.bicep' = {
   name: 'webapp'
   params: {
     appServicePlanName: appServicePlanName
@@ -102,34 +102,17 @@ module webapp 'modules/webapp.bicep' = {
     webAppName: webAppName
     storageAccountName: storageAccountName
     storageContainerName: storageContainerName
-    userAssignedResourceId: uami.outputs.resourceId
-    virtualNetworkSubnetResourceId: networking.outputs.subnetWebAppId
+    virtualNetworkSubnetResourceId: network.outputs.subnetWebAppId
     maxFileSizeMB: maxFileSizeMB
     allowedFileTypes: allowedFileTypes
     defaultThemeMode: defaultThemeMode
     appTitle: appTitle
     appSubtitle: appSubtitle
-    webAppIdentityId: uami.outputs.principalId
+    uamiName: uamiName
     avmTelemetry: avmTelemetry
-  }
-}
-
-// Log Analytics Workspace
-module law 'br/public:avm/res/operational-insights/workspace:0.13.0' = {
-  params: {
-    name: lawName
-    enableTelemetry: avmTelemetry
-  }
-}
-
-// User Assigned Managed Identity for Web App Entra ID authentication
-module uami 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.2' = {
-  params: {
-    name: uamiName
-    enableTelemetry: avmTelemetry
   }
 }
 
 // Outputs
 @description('The URL of the deployed Web App')
-output webAppUrl string = webapp.outputs.url
+output webAppUrl string = frontEnd.outputs.url
