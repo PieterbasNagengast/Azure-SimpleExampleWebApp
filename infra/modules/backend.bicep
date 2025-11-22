@@ -19,6 +19,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.29.0' = {
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     publicNetworkAccess: 'Disabled'
+    customDomainUseSubDomainName: false
     privateEndpoints: [
       {
         service: 'blob'

@@ -30,6 +30,8 @@ module subnetWebApp 'br/public:avm/res/network/virtual-network/subnet:0.1.3' = {
     addressPrefix: cidrSubnet(vnetAddressPrefix, 27, 0)
     networkSecurityGroupResourceId: nsgWebApp.outputs.resourceId
     delegation: 'Microsoft.Web/serverFarms'
+    privateEndpointNetworkPolicies: 'Disabled'
+    defaultOutboundAccess: false
     enableTelemetry: avmTelemetry
   }
 }
@@ -40,6 +42,8 @@ module subnetPrivateEndpoint 'br/public:avm/res/network/virtual-network/subnet:0
     virtualNetworkName: vnet.outputs.name
     addressPrefix: cidrSubnet(vnetAddressPrefix, 27, 1)
     networkSecurityGroupResourceId: nsgPrivateEndpoint.outputs.resourceId
+    privateEndpointNetworkPolicies: 'Disabled'
+    defaultOutboundAccess: false
     enableTelemetry: avmTelemetry
   }
 }
