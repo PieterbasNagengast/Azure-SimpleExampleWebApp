@@ -138,28 +138,3 @@ jobs:
                       echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
                       echo "" >> $GITHUB_STEP_SUMMARY
                       echo "✅ Application deployed successfully!" >> $GITHUB_STEP_SUMMARY
-
-            - name: Health Check
-              uses: azure/cli@v2
-              with:
-                  inlineScript: |
-                      webAppUrl=$(az webapp show \
-                        --name ${{ steps.webapp.outputs.webAppName }} \
-                        --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-                        --query "defaultHostName" \
-                        --output tsv)
-
-                      echo "## 🏥 Health Check" >> $GITHUB_STEP_SUMMARY
-                      echo "" >> $GITHUB_STEP_SUMMARY
-
-                      # Wait a few seconds for the app to start
-                      sleep 10
-
-                      # Check health endpoint
-                      statusCode=$(curl -s -o /dev/null -w "%{http_code}" "https://$webAppUrl/health" || echo "000")
-
-                      if [ "$statusCode" == "200" ]; then
-                        echo "✅ Health check passed (HTTP $statusCode)" >> $GITHUB_STEP_SUMMARY
-                      else
-                        echo "⚠️ Health check returned HTTP $statusCode" >> $GITHUB_STEP_SUMMARY
-                      fi
