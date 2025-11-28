@@ -2,7 +2,7 @@ using './main.bicep'
 
 // Parameters
 param appName = 'MagicFiles'
-param appServicePlanSku = 'B1'
+param appServicePlanSku = 'P1v3'
 param storageSku = 'Standard_LRS'
 param appTitle = 'My Super Magic Files App'
 param appSubtitle = 'Store and manage your files securely in the cloud'

@@ -76,7 +76,7 @@ module network 'modules/network.bicep' = {
 
 // Backend Module (Deploys Storage Account with Private Endpoint, LAW, etc.)
 module backEnd 'modules/backend.bicep' = {
-  name: 'storage'
+  name: 'backend'
   params: {
     storageAccountName: storageAccountName
     storageSku: storageSku
@@ -91,7 +91,7 @@ module backEnd 'modules/backend.bicep' = {
 
 // Frontend Module (deploys Web App, App Service Plan, UAMI, etc.)
 module frontEnd 'modules/frontend.bicep' = {
-  name: 'webapp'
+  name: 'frontend'
   params: {
     appServicePlanName: appServicePlanName
     appServicePlanSku: appServicePlanSku
