@@ -46,6 +46,9 @@ module subnetPrivateEndpoint 'br/public:avm/res/network/virtual-network/subnet:0
     defaultOutboundAccess: false
     enableTelemetry: avmTelemetry
   }
+  dependsOn: [
+    subnetWebApp
+  ]
 }
 
 module nsgWebApp 'br/public:avm/res/network/network-security-group:0.5.0' = {
