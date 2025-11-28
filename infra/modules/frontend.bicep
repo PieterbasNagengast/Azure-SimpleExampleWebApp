@@ -43,6 +43,11 @@ module webSsite 'br/public:avm/res/web/site:0.19.4' = {
   params: {
     name: webAppName
     kind: 'app'
+    slots: [
+      {
+        name: 'dev'
+      }
+    ]
     serverFarmResourceId: webServerFarm.outputs.resourceId
     managedIdentities: {
       userAssignedResourceIds: [

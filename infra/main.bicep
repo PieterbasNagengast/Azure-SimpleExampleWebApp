@@ -4,13 +4,10 @@ param appName string
 
 @description('The SKU for the App Service Plan')
 @allowed([
-  'F1'
   'B1'
-  'B2'
-  'S1'
-  'P1V2'
+  'P1v3'
 ])
-param appServicePlanSku string = 'B1'
+param appServicePlanSku string = 'P1v3'
 
 @description('The capacity (number of instances) for the App Service Plan')
 param skuCapacity int = 1
