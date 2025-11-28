@@ -5,6 +5,7 @@ param appName string
 @description('The SKU for the App Service Plan')
 @allowed([
   'B1'
+  'P0v3'
   'P1v3'
 ])
 param appServicePlanSku string = 'P1v3'
