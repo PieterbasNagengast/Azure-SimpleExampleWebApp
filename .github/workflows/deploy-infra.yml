@@ -32,16 +32,16 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
 
             # Check if resource group exists
-            rgExists=$(az group exists --name ${{ secrets.AZURE_RESOURCE_GROUP }})
+            rgExists=$(az group exists --name ${{ vars.AZURE_RESOURCE_GROUP }})
 
             if [ "$rgExists" == "true" ]; then
-              echo "✅ Resource group '${{ secrets.AZURE_RESOURCE_GROUP }}' already exists" >> $GITHUB_STEP_SUMMARY
+              echo "✅ Resource group '${{ vars.AZURE_RESOURCE_GROUP }}' in '${{ vars.AZURE_LOCATION  }}' already exists" >> $GITHUB_STEP_SUMMARY
             else
-              echo "🔨 Creating resource group '${{ secrets.AZURE_RESOURCE_GROUP }}'..." >> $GITHUB_STEP_SUMMARY
+              echo "🔨 Creating resource group '${{ vars.AZURE_RESOURCE_GROUP }}' in '${{ vars.AZURE_LOCATION  }}'..." >> $GITHUB_STEP_SUMMARY
               
               az group create \
-                --name ${{ secrets.AZURE_RESOURCE_GROUP }} \
-                --location ${{ secrets.AZURE_LOCATION  }}
+                --name ${{ vars.AZURE_RESOURCE_GROUP }} \
+                --location ${{ vars.AZURE_LOCATION  }}
               
               echo "✅ Resource group created successfully" >> $GITHUB_STEP_SUMMARY
             fi
@@ -87,7 +87,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
 
             validation=$(az deployment group validate \
-              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
               --template-file ./infra/main.bicep \
               --parameters ./infra/main.bicepparam \
               --output json)
@@ -114,7 +114,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
 
             az deployment group what-if \
-              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
               --template-file ./infra/main.bicep \
               --parameters ./infra/main.bicepparam \
               --result-format ResourceIdOnly \
@@ -168,7 +168,7 @@ jobs:
         with:
           scope: resourcegroup
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP }}
           template: ./infra/main.bicep
           parameters: ./infra/main.bicepparam
           failOnStdErr: false
@@ -180,7 +180,7 @@ jobs:
         with:
           inlineScript: |
             outputs=$(az deployment group show \
-              --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
               --name infra-deploy-${{ github.run_number }} \
               --query properties.outputs \
               --output json)
@@ -194,7 +194,7 @@ jobs:
           echo "## 🎉 Infrastructure Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Deployment Name:** infra-deploy-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Resource Group:** ${{ secrets.AZURE_RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group:** ${{ vars.AZURE_RESOURCE_GROUP }}" >> $GITHUB_STEP_SUMMARY
           echo "**Web App URL:** ${{ steps.outputs.outputs.webAppUrl }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ All infrastructure resources have been deployed successfully." >> $GITHUB_STEP_SUMMARY
