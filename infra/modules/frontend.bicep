@@ -34,6 +34,7 @@ module webServerFarm 'br/public:avm/res/web/serverfarm:0.5.0' = {
     kind: 'linux'
     reserved: true
     skuCapacity: skuCapacity
+    zoneRedundant: false
     enableTelemetry: avmTelemetry
   }
 }
