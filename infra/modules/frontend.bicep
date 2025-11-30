@@ -107,10 +107,50 @@ module slot 'br/public:avm/res/web/site/slot:0.1.1' = {
 }
 
 // Web App Authentication Settings
-module webAuth 'br/public:avm/res/web/site/config:0.1.1' = {
+module webAuth_Prod 'br/public:avm/res/web/site/config:0.1.1' = {
   params: {
     name: 'authsettingsV2'
     appName: webSsite.outputs.name
+    properties: {
+      platform: {
+        enabled: true
+      }
+      globalValidation: {
+        unauthenticatedClientAction: 'RedirectToLoginPage'
+        redirectToProvider: 'AzureActiveDirectory'
+        requireAuthentication: true
+      }
+      identityProviders: {
+        azureActiveDirectory: {
+          enabled: true
+
+          registration: {
+            clientId: appReg.outputs.clientAppId
+            clientSecretSettingName: 'OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID'
+            openIdIssuer: issuer
+          }
+          validation: {
+            defaultAuthorizationPolicy: {
+              allowedApplications: []
+            }
+          }
+        }
+      }
+      login: {
+        tokenStore: {
+          enabled: false
+        }
+      }
+    }
+    enableTelemetry: avmTelemetry
+  }
+}
+
+// Web App Authentication Settings
+module webAuth_Dev 'br/public:avm/res/web/site/config:0.1.1' = {
+  params: {
+    name: 'authsettingsV2'
+    appName: slot.outputs.name
     properties: {
       platform: {
         enabled: true
