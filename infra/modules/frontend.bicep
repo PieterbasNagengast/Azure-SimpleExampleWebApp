@@ -150,7 +150,7 @@ module webAuth_Prod 'br/public:avm/res/web/site/config:0.1.1' = {
 module webAuth_Dev 'br/public:avm/res/web/site/config:0.1.1' = {
   params: {
     name: 'authsettingsV2'
-    appName: slot.outputs.name
+    appName: '${webSsite.outputs.name}/${slot.outputs.name}'
     properties: {
       platform: {
         enabled: true
