@@ -3,7 +3,7 @@ param storageSku string
 param storageContainerName string
 param subnetResourceId string
 param privateDnsZoneResourceId string
-param principalId string
+param principalIds array
 param lawName string
 param avmTelemetry bool
 
@@ -60,7 +60,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.29.0' = {
       ]
     }
     roleAssignments: [
-      {
+      for principalId in principalIds: {
         principalId: principalId
         roleDefinitionIdOrName: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
       }

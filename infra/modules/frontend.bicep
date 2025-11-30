@@ -44,11 +44,6 @@ module webSsite 'br/public:avm/res/web/site:0.19.4' = {
   params: {
     name: webAppName
     kind: 'app'
-    slots: [
-      {
-        name: 'dev'
-      }
-    ]
     serverFarmResourceId: webServerFarm.outputs.resourceId
     managedIdentities: {
       userAssignedResourceIds: [
@@ -100,6 +95,14 @@ module webSsite 'br/public:avm/res/web/site:0.19.4' = {
     publicNetworkAccess: 'Enabled'
     virtualNetworkSubnetResourceId: virtualNetworkSubnetResourceId
     enableTelemetry: avmTelemetry
+  }
+}
+
+module slot 'br/public:avm/res/web/site/slot:0.1.1' = {
+  params: {
+    name: 'dev'
+    kind: 'app'
+    appName: webSsite.outputs.name
   }
 }
 
@@ -156,5 +159,10 @@ module appReg 'appregistration.bicep' = {
 }
 
 output url string = 'https://${webSsite.outputs.defaultHostname}'
-output uamiPrincipalId string = uami.outputs.principalId
+// output uamiPrincipalId string = uami.outputs.principalId
 output webAppName string = webSsite.outputs.name
+
+output systemAssignedMIPrincipalIds array = concat(
+  array(webSsite.outputs.?systemAssignedMIPrincipalId),
+  array(slot.outputs.?systemAssignedMIPrincipalId)
+)

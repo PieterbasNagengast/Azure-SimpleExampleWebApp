@@ -85,7 +85,7 @@ module backEnd 'modules/backend.bicep' = {
     subnetResourceId: network.outputs.subnetPrivateEndpointId
     privateDnsZoneResourceId: network.outputs.privDNSzoneId
     lawName: lawName
-    principalId: frontEnd.outputs.uamiPrincipalId
+    principalIds: frontEnd.outputs.systemAssignedMIPrincipalIds
     avmTelemetry: avmTelemetry
   }
 }
