@@ -150,7 +150,7 @@ module webAuth_Prod 'br/public:avm/res/web/site/config:0.1.1' = {
 module webAuth_Dev 'br/public:avm/res/web/site/config:0.1.1' = {
   params: {
     name: 'authsettingsV2'
-    appName: '${webSsite.outputs.name}-${slot.outputs.name}'
+    appName: '${webSsite.outputs.name}(${slot.outputs.name})'
     properties: {
       platform: {
         enabled: true
@@ -163,7 +163,6 @@ module webAuth_Dev 'br/public:avm/res/web/site/config:0.1.1' = {
       identityProviders: {
         azureActiveDirectory: {
           enabled: true
-
           registration: {
             clientId: appReg.outputs.clientAppId
             clientSecretSettingName: 'OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID'
