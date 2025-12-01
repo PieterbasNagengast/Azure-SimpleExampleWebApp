@@ -103,6 +103,9 @@ module slot 'br/public:avm/res/web/site/slot:0.1.1' = {
     name: 'dev'
     kind: 'app'
     appName: webSsite.outputs.name
+    managedIdentities: {
+      systemAssigned: true
+    }
     configs: [
       {
         name: 'authsettingsV2'
