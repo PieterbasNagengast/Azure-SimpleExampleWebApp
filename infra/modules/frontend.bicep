@@ -192,7 +192,10 @@ module appReg 'appregistration.bicep' = {
     clientAppName: webAppName
     clientAppDisplayName: 'MagicFiles Web App'
     issuer: issuer
-    webAppEndpoint: 'https://${webSsite.outputs.defaultHostname}'
+    webAppEndpoints: concat(
+      array('https://${webSsite.outputs.defaultHostname}'),
+      array('https://${webSsite.outputs.defaultHostname}-dev')
+    )
     webAppIdentityId: uami.outputs.principalId
   }
 }

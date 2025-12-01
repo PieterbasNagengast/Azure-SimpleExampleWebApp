@@ -4,7 +4,7 @@ param issuer string
 param clientAppName string
 param clientAppDisplayName string
 param clientAppScopes array = ['User.Read', 'offline_access', 'openid', 'profile']
-param webAppEndpoint string
+param webAppEndpoints array
 param webAppIdentityId string
 param serviceManagementReference string = ''
 
@@ -40,9 +40,7 @@ resource clientApp 'Microsoft.Graph/applications@v1.0' = {
     }
   }
   spa: {
-    redirectUris: [
-      '${webAppEndpoint}/.auth/login/aad/callback'
-    ]
+    redirectUris: [for endpoint in webAppEndpoints: '${endpoint}/.auth/login/aad/callback']
   }
   requiredResourceAccess: [
     {
