@@ -194,7 +194,7 @@ module appReg 'appregistration.bicep' = {
     issuer: issuer
     webAppEndpoints: concat(
       array('https://${webSsite.outputs.defaultHostname}'),
-      array('https://${webSsite.outputs.defaultHostname}-dev')
+      array('https://${webSsite.outputs.name}-dev.${substring(webSsite.outputs.defaultHostname, length(webSsite.outputs.name) + 1)}')
     )
     webAppIdentityId: uami.outputs.principalId
   }
