@@ -106,6 +106,46 @@ module slot 'br/public:avm/res/web/site/slot:0.1.1' = {
     managedIdentities: {
       systemAssigned: true
     }
+    siteConfig: {
+      linuxFxVersion: 'NODE|24-lts'
+      minTlsVersion: '1.2'
+      ftpsState: 'Disabled'
+      alwaysOn: appServicePlanSku != 'F1'
+      appSettings: [
+        {
+          name: 'AZURE_STORAGE_ACCOUNT_NAME'
+          value: storageAccountName
+        }
+        {
+          name: 'AZURE_STORAGE_CONTAINER_NAME'
+          value: storageContainerName
+        }
+        {
+          name: 'MAX_FILE_SIZE_MB'
+          value: string(maxFileSizeMB)
+        }
+        {
+          name: 'ALLOWED_FILE_TYPES'
+          value: allowedFileTypes
+        }
+        {
+          name: 'DEFAULT_THEME_MODE'
+          value: defaultThemeMode
+        }
+        {
+          name: 'APP_TITLE'
+          value: appTitle
+        }
+        {
+          name: 'APP_SUBTITLE'
+          value: appSubtitle
+        }
+        {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
+          value: 'true'
+        }
+      ]
+    }
     configs: [
       {
         name: 'authsettingsV2'
