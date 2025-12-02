@@ -142,6 +142,9 @@ module slot 'br/public:avm/res/web/site/slot:0.1.1' = {
         }
       }
     ]
+    publicNetworkAccess: 'Enabled'
+    virtualNetworkSubnetResourceId: virtualNetworkSubnetResourceId
+    enableTelemetry: avmTelemetry
   }
 }
 

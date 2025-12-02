@@ -58,6 +58,7 @@ jobs:
           # Create a zip file with the application
           zip -r ../app-deployment.zip . \
             -x "*.git*" \
+            -x "node_modules/*" \
             -x "*.md"
 
       - name: Upload artifact
