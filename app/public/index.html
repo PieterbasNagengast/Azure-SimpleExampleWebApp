@@ -725,6 +725,139 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Lightbox Styles */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .lightbox.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 95vw;
+            max-height: 95vh;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 28px;
+            line-height: 40px;
+            cursor: pointer;
+            z-index: 10001;
+            transition: all 0.2s ease;
+        }
+
+        .lightbox-close:hover {
+            transform: scale(1.1);
+            background: #dc2626;
+        }
+
+        .lightbox-image-container {
+            position: relative;
+            overflow: auto;
+            max-height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+
+        #lightboxCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            cursor: crosshair;
+        }
+
+        .lightbox-info {
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .lightbox-info h3 {
+            margin: 0 0 12px 0;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .detected-objects-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .object-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--primary);
+            color: white;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .object-tag .confidence {
+            opacity: 0.9;
+            font-size: 0.8rem;
+        }
+
+        .object-tag .color-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 2px solid white;
+        }
+
+        .image-clickable {
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .image-clickable:hover {
+            opacity: 0.8;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -797,6 +930,20 @@
                 </div>
 
                 <div id="filesGrid" class="files-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal for Image Viewing with Object Detection -->
+    <div id="imageLightbox" class="lightbox" onclick="closeLightbox(event)">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox(event)">&times;</button>
+            <div class="lightbox-image-container">
+                <canvas id="lightboxCanvas"></canvas>
+            </div>
+            <div class="lightbox-info">
+                <h3 id="lightboxFilename"></h3>
+                <div id="lightboxDetectedObjects" class="detected-objects-list"></div>
             </div>
         </div>
     </div>
@@ -1168,23 +1315,31 @@
         // Render grid view
         function renderGridView(container) {
             container.className = 'files-grid';
-            container.innerHTML = filteredFiles.map(file => `
-                <div class="file-card">
-                    <div class="file-icon">${getFileIcon(file.name)}</div>
-                    <div class="file-name">${getDisplayName(file.name)}</div>
-                    <div class="file-meta">Size: ${formatBytes(file.size)}</div>
-                    <div class="file-meta">Modified: ${formatDate(file.lastModified)}</div>
-                    <div class="file-meta">Uploaded by: ${escapeHtml(file.uploadedBy)}</div>
-                    <div class="file-actions">
-                        <button class="btn btn-success" onclick="downloadFile('${escapeHtml(file.name)}')">
-                            ⬇️ Download
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteFile('${escapeHtml(file.name)}')">
-                            🗑️ Delete
-                        </button>
+            container.innerHTML = filteredFiles.map((file, index) => {
+                const isImage = isImageFile(file.name);
+                const iconClass = isImage ? 'file-icon image-clickable' : 'file-icon';
+                const iconClick = isImage ? `onclick="openImageLightbox(filteredFiles[${index}])"` : '';
+
+                return `
+                    <div class="file-card">
+                        <div class="${iconClass}" ${iconClick} title="${isImage ? 'Click to view with object detection' : ''}">${getFileIcon(file.name)}</div>
+                        <div class="file-name">${getDisplayName(file.name)}</div>
+                        <div class="file-meta">Size: ${formatBytes(file.size)}</div>
+                        <div class="file-meta">Modified: ${formatDate(file.lastModified)}</div>
+                        <div class="file-meta">Uploaded by: ${escapeHtml(file.uploadedBy)}</div>
+                        ${file.detectedObjects ? `<div class="file-meta" style="color: var(--success);">🎯 ${file.detectedObjects.length} object(s) detected</div>` : ''}
+                        <div class="file-actions">
+                            ${isImage ? `<button class="btn btn-primary" onclick="openImageLightbox(filteredFiles[${index}])" title="View with object detection">👁️ View</button>` : ''}
+                            <button class="btn btn-success" onclick="downloadFile('${escapeHtml(file.name)}')">
+                                ⬇️ Download
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteFile('${escapeHtml(file.name)}')">
+                                🗑️ Delete
+                            </button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Render table view
@@ -1206,30 +1361,39 @@
                             <th class="${getSortClass('name')}" onclick="sortTable('name')">Name</th>
                             <th class="${getSortClass('size')}" onclick="sortTable('size')" style="width: 120px;">Size</th>
                             <th class="${getSortClass('date')}" onclick="sortTable('date')" style="width: 180px;">Modified</th>
-                            <th style="width: 200px;">Uploaded By</th>
-                            <th style="width: 180px;">Actions</th>
+                            <th style="width: 150px;">Uploaded By</th>
+                            <th style="width: 100px;">Objects</th>
+                            <th style="width: 230px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${filteredFiles.map(file => `
-                            <tr>
-                                <td><span class="file-icon">${getFileIcon(file.name)}</span></td>
-                                <td><span class="file-name">${getDisplayName(file.name)}</span></td>
-                                <td>${formatBytes(file.size)}</td>
-                                <td>${formatDate(file.lastModified)}</td>
-                                <td>${escapeHtml(file.uploadedBy)}</td>
-                                <td>
-                                    <div class="file-actions">
-                                        <button class="btn btn-success" onclick="downloadFile('${escapeHtml(file.name)}')">
-                                            ⬇️ Download
-                                        </button>
-                                        <button class="btn btn-danger" onclick="deleteFile('${escapeHtml(file.name)}')">
-                                            🗑️ Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('')}
+                        ${filteredFiles.map((file, index) => {
+                const isImage = isImageFile(file.name);
+                const iconClass = isImage ? 'file-icon image-clickable' : 'file-icon';
+                const iconClick = isImage ? `onclick="openImageLightbox(filteredFiles[${index}])"` : '';
+
+                return `
+                                <tr>
+                                    <td><span class="${iconClass}" ${iconClick} title="${isImage ? 'Click to view with object detection' : ''}">${getFileIcon(file.name)}</span></td>
+                                    <td><span class="file-name">${getDisplayName(file.name)}</span></td>
+                                    <td>${formatBytes(file.size)}</td>
+                                    <td>${formatDate(file.lastModified)}</td>
+                                    <td>${escapeHtml(file.uploadedBy)}</td>
+                                    <td>${file.detectedObjects ? `<span style="color: var(--success);">🎯 ${file.detectedObjects.length}</span>` : '-'}</td>
+                                    <td>
+                                        <div class="file-actions">
+                                            ${isImage ? `<button class="btn btn-primary" onclick="openImageLightbox(filteredFiles[${index}])" title="View with object detection">👁️</button>` : ''}
+                                            <button class="btn btn-success" onclick="downloadFile('${escapeHtml(file.name)}')">
+                                                ⬇️
+                                            </button>
+                                            <button class="btn btn-danger" onclick="deleteFile('${escapeHtml(file.name)}')">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+            }).join('')}
                     </tbody>
                 </table>
             `;
@@ -1404,6 +1568,112 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Check if file is an image
+        function isImageFile(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext);
+        }
+
+        // Open lightbox with image and detected objects
+        function openImageLightbox(file) {
+            if (!isImageFile(file.name)) return;
+
+            const lightbox = document.getElementById('imageLightbox');
+            const canvas = document.getElementById('lightboxCanvas');
+            const ctx = canvas.getContext('2d');
+            const filename = document.getElementById('lightboxFilename');
+            const objectsList = document.getElementById('lightboxDetectedObjects');
+
+            // Set filename
+            filename.textContent = getDisplayName(file.name);
+
+            // Load image
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            img.onload = function () {
+                // Set canvas size to match image
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // Draw image
+                ctx.drawImage(img, 0, 0);
+
+                // Draw bounding boxes if detected objects exist
+                if (file.detectedObjects && file.detectedObjects.length > 0) {
+                    const colors = [
+                        '#3b82f6', '#ef4444', '#10b981', '#f59e0b',
+                        '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
+                    ];
+
+                    file.detectedObjects.forEach((obj, index) => {
+                        const color = colors[index % colors.length];
+                        const bbox = obj.boundingBox;
+
+                        // Draw bounding box
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(bbox.x, bbox.y, bbox.w, bbox.h);
+
+                        // Draw label background
+                        const label = `${obj.name} (${(obj.confidence * 100).toFixed(0)}%)`;
+                        ctx.font = '16px sans-serif';
+                        const textMetrics = ctx.measureText(label);
+                        const textHeight = 20;
+
+                        ctx.fillStyle = color;
+                        ctx.fillRect(bbox.x, bbox.y - textHeight - 4, textMetrics.width + 12, textHeight + 4);
+
+                        // Draw label text
+                        ctx.fillStyle = 'white';
+                        ctx.fillText(label, bbox.x + 6, bbox.y - 8);
+                    });
+
+                    // Display detected objects list
+                    objectsList.innerHTML = file.detectedObjects.map((obj, index) => {
+                        const color = colors[index % colors.length];
+                        return `
+                            <div class="object-tag">
+                                <span class="color-indicator" style="background-color: ${color};"></span>
+                                <span>${obj.name}</span>
+                                <span class="confidence">${(obj.confidence * 100).toFixed(0)}%</span>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    objectsList.innerHTML = '<p style="color: var(--text-secondary); margin: 0;">No objects detected</p>';
+                }
+
+                // Show lightbox
+                lightbox.classList.add('show');
+            };
+
+            img.onerror = function () {
+                showStatus('Failed to load image', 'error');
+            };
+
+            // Load image from blob URL
+            img.src = file.url;
+        }
+
+        // Close lightbox
+        function closeLightbox(event) {
+            if (event.target === event.currentTarget || event.currentTarget.classList.contains('lightbox-close')) {
+                const lightbox = document.getElementById('imageLightbox');
+                lightbox.classList.remove('show');
+            }
+        }
+
+        // Close lightbox on Escape key
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                const lightbox = document.getElementById('imageLightbox');
+                if (lightbox.classList.contains('show')) {
+                    lightbox.classList.remove('show');
+                }
+            }
+        });
     </script>
 </body>
 

@@ -154,10 +154,20 @@ app.get('/api/files', async (req, res) => {
             };
 
             // Add AI Vision metadata if available
+            if (properties.metadata?.imagewidth && properties.metadata?.imageheight) {
+                fileInfo.imageWidth = parseInt(properties.metadata.imagewidth);
+                fileInfo.imageHeight = parseInt(properties.metadata.imageheight);
+            }
+
             if (properties.metadata?.detectedobjects) {
-                fileInfo.detectedObjects = properties.metadata.detectedobjects.split(',').map(obj => {
-                    const [name, confidence] = obj.split(':');
-                    return { name, confidence: parseFloat(confidence) };
+                fileInfo.detectedObjects = properties.metadata.detectedobjects.split('|').map(obj => {
+                    const [name, confidence, bbox] = obj.split(':');
+                    const [x, y, w, h] = bbox.split(',').map(Number);
+                    return {
+                        name,
+                        confidence: parseFloat(confidence),
+                        boundingBox: { x, y, w, h }
+                    };
                 });
             }
 
@@ -247,12 +257,19 @@ app.post('/api/upload', (req, res) => {
                     if (result.status === '200') {
                         const analysis = result.body;
 
-                        // Extract detected objects
+                        // Save image metadata for dimensions
+                        if (analysis.metadata) {
+                            metadata.imagewidth = analysis.metadata.width.toString();
+                            metadata.imageheight = analysis.metadata.height.toString();
+                        }
+
+                        // Extract detected objects with bounding boxes
                         if (analysis.objectsResult && analysis.objectsResult.values && analysis.objectsResult.values.length > 0) {
-                            const detectedObjects = analysis.objectsResult.values.map(obj =>
-                                `${obj.tags[0].name}:${obj.tags[0].confidence.toFixed(2)}`
-                            );
-                            metadata.detectedobjects = detectedObjects.join(',');
+                            const detectedObjects = analysis.objectsResult.values.map(obj => {
+                                const bbox = obj.boundingBox;
+                                return `${obj.tags[0].name}:${obj.tags[0].confidence.toFixed(2)}:${bbox.x},${bbox.y},${bbox.w},${bbox.h}`;
+                            });
+                            metadata.detectedobjects = detectedObjects.join('|');
                         }
 
                         // Extract tags
