@@ -82,6 +82,7 @@ module law 'br/public:avm/res/operational-insights/workspace:0.13.0' = {
 module visionAccount 'br/public:avm/res/cognitive-services/account:0.14.0' = {
   params: {
     name: visionAccountName
+    customSubDomainName: visionAccountName
     kind: 'ComputerVision'
     publicNetworkAccess: 'Enabled'
     disableLocalAuth: false
