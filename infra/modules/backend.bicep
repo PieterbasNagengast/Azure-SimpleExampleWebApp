@@ -94,7 +94,7 @@ module visionAccount 'br/public:avm/res/cognitive-services/account:0.14.0' = {
     }
     privateEndpoints: [
       {
-        service: 'cognitiveservices'
+        service: 'account'
         subnetResourceId: subnetResourceId
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
