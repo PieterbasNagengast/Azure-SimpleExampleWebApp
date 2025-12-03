@@ -311,6 +311,41 @@ app.post('/api/upload', (req, res) => {
     });
 });
 
+// View a file inline (for images in lightbox)
+app.get('/api/view/:filename', async (req, res) => {
+    try {
+        const { filename } = req.params;
+        const blobClient = containerClient.getBlobClient(filename);
+
+        // Check if blob exists
+        const exists = await blobClient.exists();
+        if (!exists) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+
+        // Get blob properties for content type
+        const properties = await blobClient.getProperties();
+
+        // Download blob
+        const downloadResponse = await blobClient.download();
+
+        // Set headers for inline display
+        res.setHeader('Content-Type', properties.contentType || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.setHeader('Content-Length', properties.contentLength);
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+
+        // Stream the blob to response
+        downloadResponse.readableStreamBody.pipe(res);
+    } catch (error) {
+        console.error('Error viewing file:', error);
+        res.status(500).json({
+            error: 'Failed to view file',
+            message: error.message
+        });
+    }
+});
+
 // Download a file
 app.get('/api/download/:filename', async (req, res) => {
     try {

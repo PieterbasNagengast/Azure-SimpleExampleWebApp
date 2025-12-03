@@ -1653,8 +1653,8 @@
                 showStatus('Failed to load image', 'error');
             };
 
-            // Load image from blob URL
-            img.src = file.url;
+            // Load image from API endpoint (not direct blob URL)
+            img.src = `/api/view/${encodeURIComponent(file.name)}`;
         }
 
         // Close lightbox
