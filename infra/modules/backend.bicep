@@ -2,7 +2,8 @@ param storageAccountName string
 param storageSku string
 param storageContainerName string
 param subnetResourceId string
-param privateDnsZoneResourceId string
+param blob_privateDnsZoneResourceId string
+param vision_privateDnsZoneResourceId string
 param principalIds array
 param lawName string
 param visionAccountName string
@@ -28,7 +29,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.29.0' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: privateDnsZoneResourceId
+              privateDnsZoneResourceId: blob_privateDnsZoneResourceId
             }
           ]
         }
@@ -84,9 +85,26 @@ module visionAccount 'br/public:avm/res/cognitive-services/account:0.14.0' = {
     name: visionAccountName
     customSubDomainName: visionAccountName
     kind: 'ComputerVision'
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'
     disableLocalAuth: false
-    sku: 'S1'
+    sku: 'F0'
+    networkAcls: {
+      defaultAction: 'Deny'
+      bypass: 'AzureServices'
+    }
+    privateEndpoints: [
+      {
+        service: 'cognitiveservices'
+        subnetResourceId: subnetResourceId
+        privateDnsZoneGroup: {
+          privateDnsZoneGroupConfigs: [
+            {
+              privateDnsZoneResourceId: vision_privateDnsZoneResourceId
+            }
+          ]
+        }
+      }
+    ]
     roleAssignments: [
       for principalId in principalIds: {
         principalId: principalId

@@ -65,9 +65,22 @@ module nsgPrivateEndpoint 'br/public:avm/res/network/network-security-group:0.5.
   }
 }
 
-module privDNSzone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
+module blob_privDNSzone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
   params: {
     name: 'privatelink.blob.${environment().suffixes.storage}'
+    virtualNetworkLinks: [
+      {
+        registrationEnabled: true
+        virtualNetworkResourceId: vnet.outputs.resourceId
+      }
+    ]
+    enableTelemetry: avmTelemetry
+  }
+}
+
+module vision_privDNSzone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
+  params: {
+    name: 'privatelink.cognitiveservices.azure.com'
     virtualNetworkLinks: [
       {
         registrationEnabled: true
@@ -83,4 +96,5 @@ output subnetWebAppId string = subnetWebApp.outputs.resourceId
 output subnetPrivateEndpointId string = subnetPrivateEndpoint.outputs.resourceId
 output nsgWebAppId string = nsgWebApp.outputs.resourceId
 output nsgPrivateEndpointId string = nsgPrivateEndpoint.outputs.resourceId
-output privDNSzoneId string = privDNSzone.outputs.resourceId
+output blob_privDNSzoneId string = blob_privDNSzone.outputs.resourceId
+output vision_privDNSzoneId string = vision_privDNSzone.outputs.resourceId

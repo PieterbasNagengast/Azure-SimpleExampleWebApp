@@ -84,7 +84,8 @@ module backEnd 'modules/backend.bicep' = {
     storageSku: storageSku
     storageContainerName: storageContainerName
     subnetResourceId: network.outputs.subnetPrivateEndpointId
-    privateDnsZoneResourceId: network.outputs.privDNSzoneId
+    blob_privateDnsZoneResourceId: network.outputs.blob_privDNSzoneId
+    vision_privateDnsZoneResourceId: network.outputs.vision_privDNSzoneId
     lawName: lawName
     principalIds: frontEnd.outputs.systemAssignedMIPrincipalIds
     visionAccountName: visionAccountName
