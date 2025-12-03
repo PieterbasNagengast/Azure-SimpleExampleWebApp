@@ -70,7 +70,7 @@ module blob_privDNSzone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
     name: 'privatelink.blob.${environment().suffixes.storage}'
     virtualNetworkLinks: [
       {
-        registrationEnabled: true
+        registrationEnabled: false
         virtualNetworkResourceId: vnet.outputs.resourceId
       }
     ]
@@ -83,7 +83,7 @@ module vision_privDNSzone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
     name: 'privatelink.cognitiveservices.azure.com'
     virtualNetworkLinks: [
       {
-        registrationEnabled: true
+        registrationEnabled: false
         virtualNetworkResourceId: vnet.outputs.resourceId
       }
     ]
