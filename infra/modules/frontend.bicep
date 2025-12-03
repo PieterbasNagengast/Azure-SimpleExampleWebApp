@@ -5,6 +5,7 @@ param avmTelemetry bool
 param webAppName string
 param storageAccountName string
 param storageContainerName string
+param visionAccountName string
 
 param virtualNetworkSubnetResourceId string
 
@@ -87,6 +88,10 @@ module webSsite 'br/public:avm/res/web/site:0.19.4' = {
           value: appSubtitle
         }
         {
+          name: 'VISION_ENDPOINT'
+          value: 'https://${visionAccountName}.cognitiveservices.azure.com/'
+        }
+        {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
           value: 'true'
         }
@@ -98,6 +103,7 @@ module webSsite 'br/public:avm/res/web/site:0.19.4' = {
   }
 }
 
+// Web App Deployment Slot - dev
 module slot 'br/public:avm/res/web/site/slot:0.1.1' = {
   params: {
     name: 'dev'
@@ -139,6 +145,10 @@ module slot 'br/public:avm/res/web/site/slot:0.1.1' = {
         {
           name: 'APP_SUBTITLE'
           value: appSubtitle
+        }
+        {
+          name: 'VISION_ENDPOINT'
+          value: 'https://${visionAccountName}.cognitiveservices.azure.com/'
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'

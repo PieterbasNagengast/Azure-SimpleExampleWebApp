@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { DefaultAzureCredential } = require('@azure/identity');
+const createClient = require('@azure-rest/ai-vision-image-analysis').default;
 const path = require('path');
 
 const app = express();
@@ -32,9 +33,15 @@ const upload = multer({
 // Azure Storage configuration
 const storageAccountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
 const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || 'uploads';
+const visionEndpoint = process.env.VISION_ENDPOINT;
 
 if (!storageAccountName) {
     console.error('AZURE_STORAGE_ACCOUNT_NAME environment variable is required');
+    process.exit(1);
+}
+
+if (!visionEndpoint) {
+    console.error('VISION_ENDPOINT environment variable is required');
     process.exit(1);
 }
 
@@ -45,6 +52,9 @@ const blobServiceClient = new BlobServiceClient(
     credential
 );
 const containerClient = blobServiceClient.getContainerClient(containerName);
+
+// Initialize Azure AI Vision client with managed identity
+const visionClient = createClient(visionEndpoint, credential);
 
 // Middleware
 app.use(express.json());
@@ -134,14 +144,31 @@ app.get('/api/files', async (req, res) => {
             const blobClient = containerClient.getBlobClient(blob.name);
             const properties = await blobClient.getProperties();
 
-            files.push({
+            const fileInfo = {
                 name: blob.name,
                 size: properties.contentLength,
                 contentType: properties.contentType,
                 lastModified: properties.lastModified,
                 uploadedBy: properties.metadata?.uploadedby || 'Unknown',
                 url: blobClient.url
-            });
+            };
+
+            // Add AI Vision metadata if available
+            if (properties.metadata?.detectedobjects) {
+                fileInfo.detectedObjects = properties.metadata.detectedobjects.split(',').map(obj => {
+                    const [name, confidence] = obj.split(':');
+                    return { name, confidence: parseFloat(confidence) };
+                });
+            }
+
+            if (properties.metadata?.imagetags) {
+                fileInfo.imageTags = properties.metadata.imagetags.split(',').map(tag => {
+                    const [name, confidence] = tag.split(':');
+                    return { name, confidence: parseFloat(confidence) };
+                });
+            }
+
+            files.push(fileInfo);
         }
 
         res.json({ files });
@@ -198,21 +225,64 @@ app.post('/api/upload', (req, res) => {
             const blobName = `${Date.now()}-${req.file.originalname}`;
             const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
+            // Prepare metadata
+            const metadata = {
+                uploadedby: userUpn,
+                uploaddate: new Date().toISOString()
+            };
+
+            // Detect objects if file is an image
+            const isImage = req.file.mimetype.startsWith('image/');
+            if (isImage) {
+                try {
+                    console.log('Analyzing image for object detection...');
+                    const result = await visionClient.path('/imageanalysis:analyze').post({
+                        body: req.file.buffer,
+                        queryParameters: {
+                            features: ['Objects', 'Tags']
+                        },
+                        contentType: 'application/octet-stream'
+                    });
+
+                    if (result.status === '200') {
+                        const analysis = result.body;
+
+                        // Extract detected objects
+                        if (analysis.objectsResult && analysis.objectsResult.values && analysis.objectsResult.values.length > 0) {
+                            const detectedObjects = analysis.objectsResult.values.map(obj =>
+                                `${obj.tags[0].name}:${obj.tags[0].confidence.toFixed(2)}`
+                            );
+                            metadata.detectedobjects = detectedObjects.join(',');
+                        }
+
+                        // Extract tags
+                        if (analysis.tagsResult && analysis.tagsResult.values && analysis.tagsResult.values.length > 0) {
+                            const tags = analysis.tagsResult.values
+                                .filter(tag => tag.confidence > 0.7)
+                                .map(tag => `${tag.name}:${tag.confidence.toFixed(2)}`);
+                            metadata.imagetags = tags.join(',');
+                        }
+                    }
+                } catch (visionError) {
+                    console.error('AI Vision analysis failed:', visionError);
+                    // Continue with upload even if vision analysis fails
+                }
+            }
+
             await blockBlobClient.uploadData(req.file.buffer, {
                 blobHTTPHeaders: {
                     blobContentType: req.file.mimetype
                 },
-                metadata: {
-                    uploadedby: userUpn,
-                    uploaddate: new Date().toISOString()
-                }
+                metadata: metadata
             });
 
             res.json({
                 message: 'File uploaded successfully',
                 fileName: blobName,
                 originalName: req.file.originalname,
-                size: req.file.size
+                size: req.file.size,
+                detectedObjects: metadata.detectedobjects || null,
+                imageTags: metadata.imagetags || null
             });
         } catch (error) {
             console.error('Error uploading file:', error);

@@ -5,6 +5,7 @@ param subnetResourceId string
 param privateDnsZoneResourceId string
 param principalIds array
 param lawName string
+param visionAccountName string
 param avmTelemetry bool
 
 // Storage Account with Blob Container
@@ -73,6 +74,24 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.29.0' = {
 module law 'br/public:avm/res/operational-insights/workspace:0.13.0' = {
   params: {
     name: lawName
+    enableTelemetry: avmTelemetry
+  }
+}
+
+// Azure AI Vision (Computer Vision) Account
+module visionAccount 'br/public:avm/res/cognitive-services/account:0.14.0' = {
+  params: {
+    name: visionAccountName
+    kind: 'ComputerVision'
+    publicNetworkAccess: 'Enabled'
+    disableLocalAuth: false
+    sku: 'S1'
+    roleAssignments: [
+      for principalId in principalIds: {
+        principalId: principalId
+        roleDefinitionIdOrName: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Cognitive Services User
+      }
+    ]
     enableTelemetry: avmTelemetry
   }
 }

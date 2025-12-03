@@ -61,6 +61,7 @@ var vnetName = 'vnet-${appName}-${uniqueSuffix}'
 var nsgWebAppName = 'nsg-webapp-subnet-${appName}-${uniqueSuffix}'
 var nsgPrivateEndpointName = 'nsg-pe-subnet-${appName}-${uniqueSuffix}'
 var lawName = 'law-${appName}-${uniqueSuffix}'
+var visionAccountName = 'cv-${appName}-${uniqueSuffix}'
 var storageContainerName = 'uploads'
 
 // Networking Module
@@ -86,6 +87,7 @@ module backEnd 'modules/backend.bicep' = {
     privateDnsZoneResourceId: network.outputs.privDNSzoneId
     lawName: lawName
     principalIds: frontEnd.outputs.systemAssignedMIPrincipalIds
+    visionAccountName: visionAccountName
     avmTelemetry: avmTelemetry
   }
 }
@@ -107,6 +109,7 @@ module frontEnd 'modules/frontend.bicep' = {
     appTitle: appTitle
     appSubtitle: appSubtitle
     uamiName: uamiName
+    visionAccountName: visionAccountName
     avmTelemetry: avmTelemetry
   }
 }

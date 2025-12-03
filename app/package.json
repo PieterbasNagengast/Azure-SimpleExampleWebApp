@@ -17,6 +17,7 @@
     "dependencies": {
         "@azure/storage-blob": "^12.24.0",
         "@azure/identity": "^4.5.0",
+        "@azure-rest/ai-vision-image-analysis": "^1.0.0",
         "express": "^4.21.1",
         "multer": "^1.4.5-lts.1"
     },
