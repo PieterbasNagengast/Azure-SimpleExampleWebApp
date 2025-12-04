@@ -1,6 +1,6 @@
 {
     "name": "magicfiles-webapp",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "File upload and download web application using Azure Blob Storage",
     "main": "server.js",
     "scripts": {

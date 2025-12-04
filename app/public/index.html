@@ -574,10 +574,13 @@
             display: flex;
             gap: 8px;
             margin-top: 16px;
+            flex-wrap: wrap;
         }
 
         .file-actions .btn {
-            flex: 1;
+            flex: 0 1 auto;
+            min-width: 44px;
+            padding: 8px 14px;
         }
 
         .status-message {
@@ -1329,13 +1332,9 @@
                         <div class="file-meta">Uploaded by: ${escapeHtml(file.uploadedBy)}</div>
                         ${file.detectedObjects ? `<div class="file-meta" style="color: var(--success);">🎯 ${file.detectedObjects.length} object(s) detected</div>` : ''}
                         <div class="file-actions">
-                            ${isImage ? `<button class="btn btn-primary" onclick="openImageLightbox(filteredFiles[${index}])" title="View with object detection">👁️ View</button>` : ''}
-                            <button class="btn btn-success" onclick="downloadFile('${escapeHtml(file.name)}')">
-                                ⬇️ Download
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteFile('${escapeHtml(file.name)}')">
-                                🗑️ Delete
-                            </button>
+                            ${isImage ? `<button class="btn btn-primary" onclick="openImageLightbox(filteredFiles[${index}])" title="View image">👁️</button>` : ''}
+                            <button class="btn btn-success" onclick="downloadFile('${escapeHtml(file.name)}')" title="Download file">⬇️</button>
+                            <button class="btn btn-danger" onclick="deleteFile('${escapeHtml(file.name)}')" title="Delete file">🗑️</button>
                         </div>
                     </div>
                 `;
