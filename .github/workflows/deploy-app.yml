@@ -71,6 +71,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    outputs:
+      app_name: ${{ steps.webapp.outputs.webAppName }}
 
     steps:
       - name: Download artifact
@@ -142,3 +144,54 @@ jobs:
             echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "✅ Application deployed successfully to dev slot!" >> $GITHUB_STEP_SUMMARY
+
+  swap-to-production:
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: production-swap # Requires manual approval
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Swap Deployment Slots
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            echo "## 🔄 Swapping Deployment Slots" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Source Slot:** dev" >> $GITHUB_STEP_SUMMARY
+            echo "**Target Slot:** production" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            az webapp deployment slot swap \
+              --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+              --name ${{ needs.deploy.outputs.app_name }} \
+              --slot dev \
+              --target-slot production
+
+            echo "✅ Slot swap completed successfully!" >> $GITHUB_STEP_SUMMARY
+
+      - name: Get Production URL
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            prodUrl=$(az webapp show \
+              --name ${{ needs.deploy.outputs.app_name }} \
+              --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+              --query "defaultHostName" \
+              --output tsv)
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## 🎉 Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Production URL:** https://$prodUrl" >> $GITHUB_STEP_SUMMARY
+            echo "**Deployed From:** dev slot" >> $GITHUB_STEP_SUMMARY
+            echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Application is now live in production!" >> $GITHUB_STEP_SUMMARY

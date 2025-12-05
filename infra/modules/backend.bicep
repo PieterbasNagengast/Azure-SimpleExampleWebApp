@@ -86,8 +86,8 @@ module visionAccount 'br/public:avm/res/cognitive-services/account:0.14.0' = {
     customSubDomainName: visionAccountName
     kind: 'ComputerVision'
     publicNetworkAccess: 'Disabled'
-    disableLocalAuth: false
-    sku: 'F0'
+    disableLocalAuth: true
+    sku: 'S1'
     networkAcls: {
       defaultAction: 'Deny'
       bypass: 'AzureServices'
