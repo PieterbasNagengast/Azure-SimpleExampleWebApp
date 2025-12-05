@@ -6,6 +6,7 @@ param clientAppDisplayName string
 param clientAppScopes array = ['User.Read', 'offline_access', 'openid', 'profile']
 param webAppEndpoints array
 param webAppIdentityId string
+param appRoleAssignmentRequired bool = true
 param serviceManagementReference string = ''
 
 param cloudEnvironment string = environment().name
@@ -66,6 +67,7 @@ resource clientApp 'Microsoft.Graph/applications@v1.0' = {
 
 resource clientSp 'Microsoft.Graph/servicePrincipals@v1.0' = {
   appId: clientApp.appId
+  appRoleAssignmentRequired: appRoleAssignmentRequired
 }
 
 output clientAppId string = clientApp.appId

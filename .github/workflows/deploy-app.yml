@@ -7,6 +7,12 @@ on:
     paths:
       - "app/**"
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Deploy Infrastructure"]
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
   id-token: write
@@ -15,6 +21,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Skip if triggered by failed infrastructure deployment
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout code
